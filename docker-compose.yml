@@ -38,9 +38,9 @@ services:
       - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
-    command: python -m src.telegram_bot
+    command: python -m src.bot.telegram
     profiles:
-      - telegram
+      - bot
 
 # ===========================================
 # Volumes
