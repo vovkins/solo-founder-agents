@@ -1,7 +1,10 @@
 """Main entry point for Solo Founder Agents."""
 
-from src.crews import run_core_crew
+import sys
+
 from config.settings import settings
+from src.cli import cli
+from src.pipeline import pipeline
 
 
 def main():
@@ -13,27 +16,10 @@ def main():
     print("\nSystem initialized. Ready to process tasks.")
 
 
-def process_vision(founder_vision: str):
-    """Process founder's product vision through the core crew.
-
-    Args:
-        founder_vision: The founder's product idea/requirements
-
-    Returns:
-        Dictionary with results
-    """
-    print(f"\n📋 Processing founder vision...")
-    print(f"Input: {founder_vision[:100]}...")
-
-    result = run_core_crew(founder_vision)
-
-    print("\n✅ Processing complete!")
-    print(f"Artifacts created:")
-    for name, path in result.get("artifacts", {}).items():
-        print(f"  - {name}: {path}")
-
-    return result
+def run():
+    """Run the CLI."""
+    cli()
 
 
 if __name__ == "__main__":
-    main()
+    run()
