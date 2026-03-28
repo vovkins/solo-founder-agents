@@ -1,0 +1,49 @@
+# Solo Founder Agents - Docker Compose
+# Development and production configuration
+
+services:
+  # ===========================================
+  # Main Application
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: solo-founder-agents
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist data
+      - ./data:/app/data
+      # Development: mount source code
+      # - ./src:/app/src
+      # - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -m src.main
+
+  # ===========================================
+  # Telegram Bot (optional)
+  # ===========================================
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sfa-telegram
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -m src.telegram_bot
+    profiles:
+      - telegram
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  data:
