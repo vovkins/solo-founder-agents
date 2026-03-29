@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .analyst import analyst_agent
+from src.agents import analyst_agent
 
 
 def create_analyze_prd_task(prd_path: str) -> Task:

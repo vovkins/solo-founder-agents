@@ -1,24 +1,7 @@
 """Core crew for PM, Analyst, and Architect agents."""
 
 from typing import Optional
-
 from crewai import Crew, Process
-
-from src.agents import pm_agent, analyst_agent, architect_agent
-from src.tasks import (
-    create_collect_requirements_task,
-    create_prd_task,
-    create_backlog_task,
-    create_prioritize_backlog_task,
-    create_analyze_prd_task,
-    create_decompose_features_task,
-    create_task_specs_task,
-    create_dependency_map_task,
-    create_analyze_requirements_task,
-    create_design_architecture_task,
-    create_system_design_task,
-    create_standards_task,
-)
 
 
 def create_core_crew(
@@ -34,6 +17,23 @@ def create_core_crew(
     Returns:
         Configured Crew instance
     """
+    # Lazy imports to avoid circular dependency
+    from src.agents import pm_agent, analyst_agent, architect_agent
+    from src.tasks import (
+        create_collect_requirements_task,
+        create_prd_task,
+        create_backlog_task,
+        create_prioritize_backlog_task,
+        create_analyze_prd_task,
+        create_decompose_features_task,
+        create_task_specs_task,
+        create_dependency_map_task,
+        create_analyze_requirements_task,
+        create_design_architecture_task,
+        create_system_design_task,
+        create_standards_task,
+    )
+
     # Create tasks
     collect_requirements = create_collect_requirements_task(founder_vision)
     create_prd = create_prd_task("{{requirements_output}}")

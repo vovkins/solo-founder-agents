@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .reviewer import reviewer_agent
+from src.agents import reviewer_agent
 
 
 def create_review_pr_task(pr_url: str, pr_description: str) -> Task:

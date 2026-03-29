@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .architect import architect_agent
+from src.agents import architect_agent
 
 
 def create_analyze_requirements_task(prd_path: str, tasks_summary: str) -> Task:

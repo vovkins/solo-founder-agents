@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .developer import developer_agent
+from src.agents import developer_agent
 
 
 def create_analyze_task_task(issue_number: int) -> Task:

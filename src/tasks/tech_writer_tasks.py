@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .tech_writer import tech_writer_agent
+from src.agents import tech_writer_agent
 
 
 def create_readme_task(project_name: str, project_description: str) -> Task:

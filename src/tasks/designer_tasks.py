@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .designer import designer_agent
+from src.agents import designer_agent
 
 
 def create_design_system_task(system_design_path: str) -> Task:

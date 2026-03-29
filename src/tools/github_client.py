@@ -28,14 +28,7 @@ class GitHubClient:
     # ===========================================
 
     def get_issue(self, issue_number: int) -> Issue.Issue:
-        """Get an issue by number.
-
-        Args:
-            issue_number: Issue number
-
-        Returns:
-            Issue instance
-        """
+        """Get an issue by number."""
         return self.repo.get_issue(issue_number)
 
     def create_issue(
@@ -45,17 +38,7 @@ class GitHubClient:
         labels: Optional[List[str]] = None,
         assignees: Optional[List[str]] = None,
     ) -> Issue.Issue:
-        """Create a new issue.
-
-        Args:
-            title: Issue title
-            body: Issue body/description
-            labels: List of label names
-            assignees: List of assignee usernames
-
-        Returns:
-            Created Issue instance
-        """
+        """Create a new issue."""
         return self.repo.create_issue(
             title=title,
             body=body,
@@ -71,18 +54,7 @@ class GitHubClient:
         labels: Optional[List[str]] = None,
         state: Optional[str] = None,
     ) -> Issue.Issue:
-        """Update an existing issue.
-
-        Args:
-            issue_number: Issue number
-            title: New title (optional)
-            body: New body (optional)
-            labels: New labels (optional)
-            state: New state ('open' or 'closed')
-
-        Returns:
-            Updated Issue instance
-        """
+        """Update an existing issue."""
         issue = self.get_issue(issue_number)
         kwargs = {}
         if title:
@@ -96,22 +68,12 @@ class GitHubClient:
         return issue.edit(**kwargs)
 
     def add_label(self, issue_number: int, label: str) -> None:
-        """Add a label to an issue.
-
-        Args:
-            issue_number: Issue number
-            label: Label name to add
-        """
+        """Add a label to an issue."""
         issue = self.get_issue(issue_number)
         issue.add_to_labels(label)
 
     def remove_label(self, issue_number: int, label: str) -> None:
-        """Remove a label from an issue.
-
-        Args:
-            issue_number: Issue number
-            label: Label name to remove
-        """
+        """Remove a label from an issue."""
         issue = self.get_issue(issue_number)
         issue.remove_from_labels(label)
 
@@ -121,49 +83,27 @@ class GitHubClient:
         labels: Optional[List[str]] = None,
         limit: int = 100,
     ) -> List[Issue.Issue]:
-        """List issues in the repository.
-
-        Args:
-            state: Issue state ('open', 'closed', 'all')
-            labels: Filter by labels
-            limit: Maximum number of issues to return
-
-        Returns:
-            List of Issue instances
-        """
+        """List issues in the repository."""
         kwargs = {"state": state}
         if labels:
             kwargs["labels"] = ",".join(labels)
-        return list(self.repo.get_issues(**kwargs)[:limit])
+        
+        # Get issues and limit manually
+        issues = self.repo.get_issues(**kwargs)
+        result = []
+        for i, issue in enumerate(issues):
+            if i >= limit:
+                break
+            result.append(issue)
+        return result
 
     # ===========================================
     # File Operations
     # ===========================================
 
     def get_file(self, path: str, branch: str = "main") -> ContentFile:
-        """Get file content from repository.
-
-        Args:
-            path: File path in repository
-            branch: Branch name
-
-        Returns:
-            ContentFile instance
-        """
+        """Get file content from repository."""
         return self.repo.get_contents(path, ref=branch)
-
-    def read_file(self, path: str, branch: str = "main") -> str:
-        """Read file content as string.
-
-        Args:
-            path: File path in repository
-            branch: Branch name
-
-        Returns:
-            File content as string
-        """
-        content = self.get_file(path, branch)
-        return content.decoded_content.decode("utf-8")
 
     def create_file(
         self,
@@ -172,17 +112,7 @@ class GitHubClient:
         message: str,
         branch: str = "main",
     ) -> dict:
-        """Create a new file in repository.
-
-        Args:
-            path: File path in repository
-            content: File content
-            message: Commit message
-            branch: Branch name
-
-        Returns:
-            GitHub API response
-        """
+        """Create a new file in the repository."""
         return self.repo.create_file(
             path=path,
             message=message,
@@ -197,17 +127,7 @@ class GitHubClient:
         message: str,
         branch: str = "main",
     ) -> dict:
-        """Update an existing file in repository.
-
-        Args:
-            path: File path in repository
-            content: New file content
-            message: Commit message
-            branch: Branch name
-
-        Returns:
-            GitHub API response
-        """
+        """Update an existing file."""
         file = self.get_file(path, branch)
         return self.repo.update_file(
             path=path,
@@ -223,16 +143,7 @@ class GitHubClient:
         message: str,
         branch: str = "main",
     ) -> dict:
-        """Delete a file from repository.
-
-        Args:
-            path: File path in repository
-            message: Commit message
-            branch: Branch name
-
-        Returns:
-            GitHub API response
-        """
+        """Delete a file from the repository."""
         file = self.get_file(path, branch)
         return self.repo.delete_file(
             path=path,
@@ -246,46 +157,58 @@ class GitHubClient:
     # ===========================================
 
     def create_branch(self, branch_name: str, base_branch: str = "main") -> str:
-        """Create a new branch.
-
-        Args:
-            branch_name: New branch name
-            base_branch: Base branch to create from
-
-        Returns:
-            New branch name
-        """
+        """Create a new branch."""
         ref = self.repo.get_git_ref(f"heads/{base_branch}")
-        self.repo.create_git_ref(f"refs/heads/{branch_name}", ref.object.sha)
+        self.repo.create_git_ref(f"refs/heads/{branch_name}", sha=ref.object.sha)
         return branch_name
+
+    def get_branch(self, branch_name: str):
+        """Get a branch."""
+        return self.repo.get_branch(branch_name)
+
+    def delete_branch(self, branch_name: str) -> None:
+        """Delete a branch."""
+        ref = self.repo.get_git_ref(f"heads/{branch_name}")
+        ref.delete()
+
+    # ===========================================
+    # Pull Request Operations
+    # ===========================================
 
     def create_pull_request(
         self,
         title: str,
         body: str,
-        head: str,
-        base: str = "main",
-        draft: bool = False,
-    ) -> dict:
-        """Create a pull request.
-
-        Args:
-            title: PR title
-            body: PR body/description
-            head: Head branch name
-            base: Base branch name
-            draft: Whether to create as draft
-
-        Returns:
-            PullRequest instance
-        """
+        head_branch: str,
+        base_branch: str = "main",
+    ):
+        """Create a pull request."""
         return self.repo.create_pull(
             title=title,
             body=body,
-            head=head,
-            base=base,
-            draft=draft,
+            head=head_branch,
+            base=base_branch,
         )
+
+    def get_pull_request(self, pr_number: int):
+        """Get a pull request by number."""
+        return self.repo.get_pull(pr_number)
+
+    def list_pull_requests(self, state: str = "open", limit: int = 100):
+        """List pull requests."""
+        prs = self.repo.get_pulls(state=state)
+        result = []
+        for i, pr in enumerate(prs):
+            if i >= limit:
+                break
+            result.append(pr)
+        return result
+
+    def merge_pull_request(self, pr_number: int) -> bool:
+        """Merge a pull request."""
+        pr = self.get_pull_request(pr_number)
+        pr.merge()
+        return True
 
 
 # Global client instance

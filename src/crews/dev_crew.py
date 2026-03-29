@@ -1,28 +1,7 @@
 """Development crew for implementing features."""
 
 from typing import Optional
-
 from crewai import Crew, Process
-
-from src.agents import (
-    designer_agent,
-    developer_agent,
-    reviewer_agent,
-    qa_agent,
-    tech_writer_agent,
-)
-from src.tasks import (
-    create_design_system_task,
-    create_ui_screen_task,
-    create_analyze_task_task,
-    create_feature_branch_task,
-    create_implement_feature_task,
-    create_write_tests_task,
-    create_pull_request_task,
-    create_review_pr_task,
-    create_qa_signoff_task,
-    create_readme_task,
-)
 
 
 def create_dev_crew(
@@ -31,17 +10,28 @@ def create_dev_crew(
     system_design_path: str = "data/artifacts/docs/system-design.md",
     verbose: bool = True,
 ) -> Crew:
-    """Create a crew for developing a single task/feature.
+    """Create a crew for developing a single task/feature."""
+    # Lazy imports to avoid circular dependency
+    from src.agents import (
+        designer_agent,
+        developer_agent,
+        reviewer_agent,
+        qa_agent,
+        tech_writer_agent,
+    )
+    from src.tasks import (
+        create_design_system_task,
+        create_ui_screen_task,
+        create_analyze_task_task,
+        create_feature_branch_task,
+        create_implement_feature_task,
+        create_write_tests_task,
+        create_pull_request_task,
+        create_review_pr_task,
+        create_qa_signoff_task,
+        create_readme_task,
+    )
 
-    Args:
-        issue_number: GitHub Issue number for the task
-        task_description: Description of the task
-        system_design_path: Path to system design doc
-        verbose: Whether to show detailed output
-
-    Returns:
-        Configured Crew instance
-    """
     # Designer tasks
     design_system = create_design_system_task(system_design_path)
     design_screen = create_ui_screen_task("TaskScreen", task_description)
@@ -71,20 +61,15 @@ def create_dev_crew(
             tech_writer_agent,
         ],
         tasks=[
-            # Design phase
             design_system,
             design_screen,
-            # Development phase
             analyze_task,
             create_branch,
             implement,
             write_tests,
             create_pr,
-            # Review phase
             review_pr,
-            # QA phase
             qa_signoff,
-            # Documentation phase
             update_readme,
         ],
         process=Process.sequential,
@@ -93,15 +78,7 @@ def create_dev_crew(
 
 
 def run_dev_crew(issue_number: int, task_description: str) -> dict:
-    """Run the development crew for a task.
-
-    Args:
-        issue_number: GitHub Issue number
-        task_description: Description of the task
-
-    Returns:
-        Dictionary with results
-    """
+    """Run the development crew for a task."""
     crew = create_dev_crew(issue_number, task_description)
     result = crew.kickoff()
 
@@ -117,19 +94,12 @@ def create_review_cycle_crew(
     review_comments: str,
     verbose: bool = True,
 ) -> Crew:
-    """Create a crew for addressing review comments.
-
-    Args:
-        pr_url: Pull Request URL
-        review_comments: Comments from the reviewer
-        verbose: Whether to show detailed output
-
-    Returns:
-        Configured Crew instance
-    """
+    """Create a crew for addressing review comments."""
+    from src.agents import developer_agent, qa_agent, reviewer_agent
     from src.tasks import (
         create_fix_review_comments_task,
         create_regression_test_task,
+        create_review_pr_task,
     )
 
     fix_comments = create_fix_review_comments_task(pr_url, review_comments)
@@ -150,17 +120,8 @@ def create_qa_cycle_crew(
     acceptance_criteria: list,
     verbose: bool = True,
 ) -> Crew:
-    """Create a crew for QA testing cycle.
-
-    Args:
-        pr_url: Pull Request URL
-        test_cases: List of test cases
-        acceptance_criteria: List of acceptance criteria
-        verbose: Whether to show detailed output
-
-    Returns:
-        Configured Crew instance
-    """
+    """Create a crew for QA testing cycle."""
+    from src.agents import qa_agent
     from src.tasks import (
         create_test_plan_task,
         create_e2e_tests_task,

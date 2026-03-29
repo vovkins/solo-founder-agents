@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .pm import pm_agent
+from src.agents import pm_agent
 
 
 def create_collect_requirements_task(user_input: str) -> Task:

@@ -1,10 +1,7 @@
 # Solo Founder Agents - Docker Compose
-# Development and production configuration
 
 services:
-  # ===========================================
-  # Main Application
-  # ===========================================
+  # Main Application (stays running for docker exec commands)
   app:
     build:
       context: .
@@ -14,18 +11,11 @@ services:
     env_file:
       - .env
     volumes:
-      # Persist data
       - ./data:/app/data
-      # Development: mount source code
-      # - ./src:/app/src
-      # - ./config:/app/config
     environment:
       - PYTHONUNBUFFERED=1
-    command: python -m src.main
 
-  # ===========================================
   # Telegram Bot (optional)
-  # ===========================================
   telegram-bot:
     build:
       context: .
@@ -42,8 +32,5 @@ services:
     profiles:
       - bot
 
-# ===========================================
-# Volumes
-# ===========================================
 volumes:
   data:

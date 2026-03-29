@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from .qa import qa_agent
+from src.agents import qa_agent
 
 
 def create_test_plan_task(pr_url: str, acceptance_criteria: list) -> Task:
