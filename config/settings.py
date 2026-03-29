@@ -19,14 +19,15 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
 
     # LLM Models per Agent (OpenRouter format)
-    llm_pm: str = "openai/gpt-4o"
-    llm_analyst: str = "openai/gpt-4o"
-    llm_architect: str = "openai/gpt-4o"
-    llm_designer: str = "openai/gpt-4o"
-    llm_developer: str = "anthropic/claude-sonnet"
-    llm_reviewer: str = "openai/gpt-4o"
-    llm_qa: str = "openai/gpt-4o"
-    llm_tech_writer: str = "openai/gpt-4o"
+    # All roles use z-ai/glm-5, except Reviewer uses different model
+    llm_pm: str = "z-ai/glm-5"
+    llm_analyst: str = "z-ai/glm-5"
+    llm_architect: str = "z-ai/glm-5"
+    llm_designer: str = "z-ai/glm-5"
+    llm_developer: str = "z-ai/glm-5"
+    llm_reviewer: str = "openai/gpt-5.1-codex-mini"
+    llm_qa: str = "z-ai/glm-5"
+    llm_tech_writer: str = "z-ai/glm-5"
 
     # OpenRouter Base URL
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

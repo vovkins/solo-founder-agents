@@ -12,14 +12,20 @@
 
 | Роль | Модель | Причина |
 |------|--------|---------|
-| Product Manager | openai/gpt-4o | Анализ, структурирование требований |
-| Analyst | openai/gpt-4o | Декомпозиция, логика |
-| Architect | openai/gpt-4o | Системное мышление |
-| Designer | openai/gpt-4o | Креативность, дизайн-решения |
-| **Developer (код)** | anthropic/claude-sonnet | Лучший для написания кода |
-| **Developer (reviewer)** | openai/gpt-4o | Другая модель для code review |
-| QA | openai/gpt-4o | Аналитика, тест-кейсы |
-| Tech Writer | openai/gpt-4o | Тексты, документация |
+| Product Manager | z-ai/glm-5 | Основная модель для всех ролей |
+| Analyst | z-ai/glm-5 | Основная модель для всех ролей |
+| Architect | z-ai/glm-5 | Основная модель для всех ролей |
+| Designer | z-ai/glm-5 | Основная модель для всех ролей |
+| **Developer (код)** | z-ai/glm-5 | Основная модель для всех ролей |
+| **Developer (reviewer)** | openai/gpt-5.1-codex-mini | Другая модель для code review |
+| QA | z-ai/glm-5 | Основная модель для всех ролей |
+| Tech Writer | z-ai/glm-5 | Основная модель для всех ролей |
+
+---
+
+## Важно: Developer vs Reviewer
+
+Developer (coder) и Reviewer используют **разные модели** — это критически важно для качественного code review.
 
 ---
 
@@ -34,7 +40,14 @@ developer = Agent(
     role="Developer",
     goal="Write clean, efficient code",
     backstory="Experienced software developer",
-    llm="openrouter/anthropic/claude-sonnet"
+    llm="openrouter/z-ai/glm-5"
+)
+
+reviewer = Agent(
+    role="Reviewer", 
+    goal="Review code quality",
+    backstory="Senior code reviewer",
+    llm="openrouter/openai/gpt-5.1-codex-mini"
 )
 ```
 
@@ -49,16 +62,7 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 ---
 
-## Примечания
+## Обновлено
 
-- Список моделей будет меняться по результатам экспериментов
-- OpenRouter позволяет менять модели без изменения кода
-- Можно тестировать разные модели для одной роли
-
----
-
-## Полезные ссылки
-
-- OpenRouter Models: https://openrouter.ai/models
-- OpenRouter Docs: https://openrouter.ai/docs
-- CrewAI LLM Connections: https://docs.crewai.com/how-to/LLM-Connections
+- **Дата:** 2026-03-29
+- **Изменение:** Перевод всех ролей на z-ai/glm-5, Reviewer на openai/gpt-5.1-codex-mini
