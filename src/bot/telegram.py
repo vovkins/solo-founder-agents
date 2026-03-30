@@ -88,12 +88,15 @@ class TelegramBot:
             f"👋 Привет, {user.first_name if user else 'founder'}!\n\n"
             "Я Solo Founder Agents Bot — управляю командой AI-агентов.\n\n"
             "📋 **Команды:**\n"
-            "/new — начать новую задачу\n"
+            "/new — создать новую задачу\n"
             "/status — статус проекта\n"
             "/issues — список задач\n"
             "/run <issue> — запустить задачу\n"
+            "/checkpoint — статусы checkpoint'ов\n"
+            "/approve — одобрить checkpoint\n"
+            "/reject <причина> — отклонить checkpoint\n"
             "/cancel — отменить диалог\n"
-            "/help — справка",
+            "/help — полная справка",
             parse_mode="Markdown"
         )
 
