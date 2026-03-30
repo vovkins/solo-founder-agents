@@ -2,6 +2,9 @@
 
 from typing import List, Optional
 
+from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
+
 from .github_client import github_client
 
 
@@ -207,3 +210,36 @@ def create_pull_request(
     """
     pr = github_client.create_pull_request(title, body, head_branch, base_branch)
     return pr.html_url
+
+
+# ===========================================
+# CrewAI Tools
+# ===========================================
+
+
+class CreateGitHubIssueTool(BaseTool):
+    """Tool for creating GitHub issues."""
+
+    name: str = "create_github_issue"
+    description: str = "Create a GitHub issue with title, body, and optional labels"
+    args_schema: type[BaseModel] = Field(default=BaseModel)
+
+    def _run(self, title: str, body: str, labels: Optional[List[str]] = None) -> str:
+        return create_github_issue(title, body, labels)
+
+
+class ListOpenIssuesTool(BaseTool):
+    """Tool for listing open GitHub issues."""
+
+    name: str = "list_open_issues"
+    description: str = "List all open GitHub issues in the repository"
+    args_schema: type[BaseModel] = Field(default=BaseModel)
+
+    def _run(self, labels: Optional[List[str]] = None) -> str:
+        issues = list_open_issues(labels)
+        return "\n".join([f"#{issue['number']} — {issue['title']}" for issue in issues])
+
+
+# Export tools
+create_github_issue_tool = CreateGitHubIssueTool()
+list_open_issues_tool = ListOpenIssuesTool()
