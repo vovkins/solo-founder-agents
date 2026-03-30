@@ -17,8 +17,8 @@ def create_github_issue(
     title: str,
     body: str,
     labels: Optional[List[str]] = None,
-) -> str:
-    """Create a GitHub issue and return its URL.
+) -> dict:
+    """Create a GitHub issue and return its info.
 
     Args:
         title: Issue title
@@ -26,10 +26,14 @@ def create_github_issue(
         labels: List of label names to apply
 
     Returns:
-        URL of the created issue
+        Dict with 'number', 'url', 'title' of the created issue
     """
     issue = github_client.create_issue(title, body, labels or [])
-    return issue.html_url
+    return {
+        "number": issue.number,
+        "url": issue.html_url,
+        "title": issue.title
+    }
 
 
 def update_github_issue(
