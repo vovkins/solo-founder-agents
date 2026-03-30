@@ -22,6 +22,13 @@ from .storage import (
     delete_artifact,
 )
 from .state import StateManager, state_manager
+from .artifact_manager import ArtifactManager, ArtifactType, get_artifact_manager
+from .artifact_tools import (
+    SaveArtifactTool,
+    ReadArtifactTool,
+    SyncArtifactsTool,
+    get_artifact_tools,
+)
 
 __all__ = [
     # GitHub Client
@@ -50,4 +57,13 @@ __all__ = [
     # State
     "StateManager",
     "state_manager",
+    # Artifact Manager
+    "ArtifactManager",
+    "ArtifactType",
+    "get_artifact_manager",
+    # Artifact Tools
+    "SaveArtifactTool",
+    "ReadArtifactTool",
+    "SyncArtifactsTool",
+    "get_artifact_tools",
 ]

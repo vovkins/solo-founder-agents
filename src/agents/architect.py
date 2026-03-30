@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools
 
 # System prompt for Architect
 ARCHITECT_SYSTEM_PROMPT = """You are a Software Architect agent in a multi-agent AI system for solo founders.
@@ -43,6 +44,16 @@ Your role is to:
    - Set naming conventions
    - Create folder structure template
 
+## IMPORTANT: Saving Artifacts
+
+You MUST use the `save_artifact` tool to save your work to GitHub.
+
+Example:
+```
+save_artifact("system-design", "# System Design\\n\\n...")
+save_artifact("adr", "# ADR-001: Choose Database\\n\\n...", name="ADR-001")
+```
+
 ## Output Format
 
 All outputs must follow the templates in templates/ADR-main.md and templates/system-design.md
@@ -82,6 +93,7 @@ def create_architect_agent() -> Agent:
         goal="Design system architecture and document technical decisions",
         backstory=ARCHITECT_SYSTEM_PROMPT,
         llm=LLMProvider.get_architect_llm(),
+        tools=get_artifact_tools(),  # Add artifact tools
         verbose=True,
         allow_delegation=False,
     )

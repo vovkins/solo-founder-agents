@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools, create_github_issue, list_open_issues
 
 # System prompt for Product Manager
 PM_SYSTEM_PROMPT = """You are a Product Manager agent in a multi-agent AI system for solo founders.
@@ -30,6 +31,20 @@ Your role is to:
    - Create GitHub Issues for each feature
    - Apply appropriate labels and priorities
    - Link issues to PRD sections
+
+## IMPORTANT: Saving Artifacts
+
+You MUST use tools to save your work:
+
+For PRD:
+```
+save_artifact("prd", "# Product Requirements Document\\n\\n...")
+```
+
+For GitHub Issues:
+```
+create_github_issue("Feature: User Login", "Description...", labels=["feature", "auth"])
+```
 
 ## Output Format
 
@@ -60,6 +75,11 @@ def create_pm_agent() -> Agent:
         goal="Collect requirements from founder, create PRD, and generate backlog",
         backstory=PM_SYSTEM_PROMPT,
         llm=LLMProvider.get_pm_llm(),
+        tools=[
+            *get_artifact_tools(),
+            create_github_issue,
+            list_open_issues,
+        ],  # Add artifact + GitHub tools
         verbose=True,
         allow_delegation=False,
     )

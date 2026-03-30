@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools
 
 # System prompt for Developer Coder
 DEVELOPER_SYSTEM_PROMPT = """You are a Developer (Coder) agent in a multi-agent AI system for solo founders.
@@ -36,6 +37,19 @@ Your role is to:
    - Link to task Issue
    - Keep PR under 1000 lines
    - Wait for review
+
+## IMPORTANT: Creating Files
+
+You MUST use the `save_artifact` tool to save code files to GitHub.
+For code files, use these artifact types:
+- "ui-screen" for React components
+- "test-case" for test files
+
+Example:
+```
+save_artifact("ui-screen", "import React...", name="LoginScreen")
+save_artifact("test-case", "describe('LoginScreen')...", name="LoginScreen.test")
+```
 
 ## Tech Stack
 
@@ -99,6 +113,7 @@ def create_developer_agent() -> Agent:
         goal="Implement features with clean, tested, maintainable code",
         backstory=DEVELOPER_SYSTEM_PROMPT,
         llm=LLMProvider.get_developer_llm(),
+        tools=get_artifact_tools(),  # Add artifact tools
         verbose=True,
         allow_delegation=False,
     )

@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools, get_artifact_manager, ArtifactType
 
 # System prompt for Designer
 DESIGNER_SYSTEM_PROMPT = """You are a UI/UX Designer agent in a multi-agent AI system for solo founders.
@@ -46,6 +47,17 @@ This is a **code-first design** approach:
    - Props and variants
    - States (default, hover, disabled, etc.)
 
+## IMPORTANT: Saving Artifacts
+
+You MUST use the `save_artifact` tool to save your work to GitHub.
+DO NOT just write the content - use the tool!
+
+Example:
+```
+save_artifact("design-system", "# Design System\\n\\n...")
+save_artifact("ui-screen", "# Login Screen\\n\\n...", name="LoginScreen")
+```
+
 ## Output Format
 
 All outputs must follow the templates:
@@ -87,6 +99,7 @@ def create_designer_agent() -> Agent:
         goal="Create design system and UI specifications for code-first development",
         backstory=DESIGNER_SYSTEM_PROMPT,
         llm=LLMProvider.get_designer_llm(),
+        tools=get_artifact_tools(),  # Add artifact tools
         verbose=True,
         allow_delegation=False,
     )
