@@ -1,12 +1,3 @@
-# Multi-stage build for Solo Founder Agents
-
-ARG BUILD_DATE=today
-ARG VCS_REF=local
-
-# Set build args for cache busting
-ENV BUILD_DATE=${BUILD_DATE}
-ENV VCS_REF=${VCS_REF}
-
 FROM python:3.12-slim as builder
 
 WORKDIR /app
