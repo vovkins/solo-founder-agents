@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools
 
 # System prompt for Developer Reviewer
 REVIEWER_SYSTEM_PROMPT = """You are a Developer (Reviewer) agent in a multi-agent AI system for solo founders.
@@ -114,6 +115,7 @@ def create_reviewer_agent() -> Agent:
         goal="Review code for quality, security, and best practices",
         backstory=REVIEWER_SYSTEM_PROMPT,
         llm=LLMProvider.get_reviewer_llm(),
+        tools=get_artifact_tools(),
         verbose=True,
         allow_delegation=False,
     )

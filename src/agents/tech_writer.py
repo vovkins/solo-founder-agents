@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools
 
 # System prompt for Tech Writer
 TECH_WRITER_SYSTEM_PROMPT = """You are a Technical Writer agent in a multi-agent AI system for solo founders.
@@ -87,6 +88,7 @@ def create_tech_writer_agent() -> Agent:
         goal="Create clear, comprehensive documentation for developers and users",
         backstory=TECH_WRITER_SYSTEM_PROMPT,
         llm=LLMProvider.get_tech_writer_llm(),
+        tools=get_artifact_tools(),
         verbose=True,
         allow_delegation=False,
     )

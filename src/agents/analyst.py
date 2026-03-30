@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools, create_github_issue
 
 # System prompt for Analyst
 ANALYST_SYSTEM_PROMPT = """You are a Business Analyst agent in a multi-agent AI system for solo founders.
@@ -76,6 +77,7 @@ def create_analyst_agent() -> Agent:
         goal="Decompose features into implementable tasks with clear specifications",
         backstory=ANALYST_SYSTEM_PROMPT,
         llm=LLMProvider.get_analyst_llm(),
+        tools=[*get_artifact_tools(), create_github_issue],
         verbose=True,
         allow_delegation=False,
     )

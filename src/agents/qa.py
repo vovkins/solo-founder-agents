@@ -3,6 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
+from src.tools import get_artifact_tools
 
 # System prompt for QA Engineer
 QA_SYSTEM_PROMPT = """You are a QA Engineer agent in a multi-agent AI system for solo founders.
@@ -101,6 +102,7 @@ def create_qa_agent() -> Agent:
         goal="Ensure quality through comprehensive testing and verify acceptance criteria",
         backstory=QA_SYSTEM_PROMPT,
         llm=LLMProvider.get_qa_llm(),
+        tools=get_artifact_tools(),
         verbose=True,
         allow_delegation=False,
     )
