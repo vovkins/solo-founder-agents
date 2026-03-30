@@ -1,9 +1,10 @@
-"""Telegram bot for founder interaction."""
+"""Telegram bot for founder interaction with PM agent dialog support."""
 
 import asyncio
 import logging
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from enum import Enum
 
 from telegram import Update
 from telegram.ext import (
@@ -15,9 +16,10 @@ from telegram.ext import (
 )
 
 from config.settings import settings
-from src.pipeline import pipeline, PipelineStage, Checkpoint
+from src.pipeline import pipeline
 from src.tools.state import state_manager
-from src.tools import get_issue_details, list_open_issues
+from src.tools import list_open_issues, create_github_issue
+from src.tools.artifact_tools import SaveArtifactTool
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -26,12 +28,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+class DialogState(str, Enum):
+    """Состояния диалога с пользователем."""
+    IDLE = "idle"
+    COLLECTING_REQUIREMENTS = "collecting_requirements"
+    CONFIRMING_PRD = "confirming_prd"
+
+
 class TelegramBot:
     """Telegram bot for founder interaction."""
 
     def __init__(self, token: Optional[str] = None):
         self.token = token or settings.telegram_bot_token
         self.app: Optional[Application] = None
+        
+        # Auth
         auth_users_str = os.environ.get("AUTHORIZED_USERS", "")
         self.authorized_users: List[int] = []
         if auth_users_str:
@@ -41,54 +52,112 @@ class TelegramBot:
                 logger.warning(f"Invalid AUTHORIZED_USERS format: {auth_users_str}")
         logger.info(f"Authorized users: {self.authorized_users}")
 
+        # Dialog state per user
+        self.user_states: Dict[int, Dict[str, Any]] = {}
+
     def is_authorized(self, user_id: int) -> bool:
         if not self.authorized_users:
             logger.warning(f"No authorized users configured. Allowing user {user_id}")
             return True
         return user_id in self.authorized_users
 
+    def get_user_state(self, user_id: int) -> Dict[str, Any]:
+        """Get or create user dialog state."""
+        if user_id not in self.user_states:
+            self.user_states[user_id] = {
+                "dialog_state": DialogState.IDLE,
+                "requirements_data": {},
+                "prd_draft": None,
+            }
+        return self.user_states[user_id]
+
+    # === COMMANDS ===
+
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         user_id = user.id if user else 0
-        logger.info(f"/start from User ID: {user_id}, Username: {user.username if user else 'unknown'}")
+        logger.info(f"/start from User ID: {user_id}")
 
         if not self.is_authorized(user_id):
-            # Show user ID for setup (plain text to avoid HTML parsing issues)
             await update.message.reply_text(
-                f"⛔ Access denied.\n\n💡 Your Telegram ID: {user_id}\nAdd to AUTHORIZED_USERS env var to authorize."
+                f"⛔ Access denied.\n\n💡 Your Telegram ID: {user_id}\nAdd to AUTHORIZED_USERS env var."
             )
             return
 
         await update.message.reply_text(
-            f"👋 Привет!\n\n"
-            "Я Solo Founder Agents Bot — помогаю управлять командой AI-агентов.\n\n"
-            "📋 Команды:\n"
+            f"👋 Привет, {user.first_name if user else 'founder'}!\n\n"
+            "Я Solo Founder Agents Bot — управляю командой AI-агентов.\n\n"
+            "📋 **Команды:**\n"
+            "/new — начать новую задачу\n"
             "/status — статус проекта\n"
-            "/issues — список открытых задач\n"
+            "/issues — список задач\n"
             "/run <issue> — запустить задачу\n"
-            "/checkpoint — статус checkpoint'ов\n"
-            "/approve — одобрить checkpoint\n"
-            "/reject <причина> — отклонить checkpoint\n"
-            "/help — справка"
+            "/cancel — отменить диалог\n"
+            "/help — справка",
+            parse_mode="Markdown"
+        )
+
+    async def new_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Start new task requirements collection."""
+        user = update.effective_user
+        user_id = user.id if user else 0
+        logger.info(f"/new from User ID: {user_id}")
+
+        if not self.is_authorized(user_id):
+            await update.message.reply_text("⛔ Access denied")
+            return
+
+        state = self.get_user_state(user_id)
+        state["dialog_state"] = DialogState.COLLECTING_REQUIREMENTS
+        state["requirements_data"] = {}
+
+        await update.message.reply_text(
+            "🚀 **Создание новой задачи**\n\n"
+            "Расскажи что хочешь создать. Я задам уточняющие вопросы и создам PRD.\n\n"
+            "📝 **Опиши свою идею:**\n"
+            "- Что за продукт/фича?\n"
+            "- Для кого?\n"
+            "- Какую проблему решает?",
+            parse_mode="Markdown"
         )
 
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         user_id = user.id if user else 0
-        logger.info(f"/status from User ID: {user_id}")
 
         if not self.is_authorized(user_id):
             await update.message.reply_text("⛔ Access denied")
             return
 
         status = pipeline.get_status()
-        message = f"📊 **Статус проекта**\n\n📍 Текущая фаза: `{status.get('current_stage', 'unknown')}`\n"
+        stage = status.get('current_stage', 'unknown')
+        
+        # Map stages to Russian
+        stage_names = {
+            "idle": "💤 Ожидание",
+            "requirements": "📋 Сбор требований",
+            "analysis": "🔍 Анализ",
+            "architecture": "🏗️ Архитектура",
+            "design": "🎨 Дизайн",
+            "development": "💻 Разработка",
+            "review": "👀 Ревью",
+            "testing": "🧪 Тестирование",
+            "documentation": "📝 Документация",
+            "completed": "✅ Завершено",
+        }
+        stage_display = stage_names.get(stage, stage)
+
+        message = (
+            f"📊 **Статус проекта**\n\n"
+            f"📍 Фаза: {stage_display}\n"
+            f"📂 Репозиторий: `vovkins/agents-react-native-experiment`\n\n"
+            f"Используй /issues чтобы посмотреть задачи"
+        )
         await update.message.reply_text(message, parse_mode="Markdown")
 
     async def issues_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         user_id = user.id if user else 0
-        logger.info(f"/issues from User ID: {user_id}")
 
         if not self.is_authorized(user_id):
             await update.message.reply_text("⛔ Access denied")
@@ -96,18 +165,21 @@ class TelegramBot:
 
         issues = list_open_issues()
         if not issues:
-            await update.message.reply_text("📭 Нет открытых задач")
+            await update.message.reply_text("📭 Нет открытых задач\n\nИспользуй /new чтобы создать новую")
             return
 
         message = "📋 **Открытые задачи:**\n\n"
         for issue in issues[:10]:
+            labels = ", ".join([f"`{l}`" for l in issue.get("labels", [])]) if issue.get("labels") else ""
             message += f"#{issue['number']} — {issue['title']}\n"
+            if labels:
+                message += f"   🏷️ {labels}\n"
+        message += f"\n💡 `/run <номер>` чтобы запустить"
         await update.message.reply_text(message, parse_mode="Markdown")
 
     async def run_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         user_id = user.id if user else 0
-        logger.info(f"/run from User ID: {user_id}, args: {context.args}")
 
         if not self.is_authorized(user_id):
             await update.message.reply_text("⛔ Access denied")
@@ -123,8 +195,63 @@ class TelegramBot:
             await update.message.reply_text("❌ Номер задачи должен быть числом")
             return
 
-        await update.message.reply_text(f"🚀 Запускаю задачу #{issue_number}...\nАгенты приступили к работе!")
+        await update.message.reply_text(
+            f"🚀 **Запускаю задачу #{issue_number}**\n\n"
+            f"Агенты приступают к работе:\n"
+            f"→ PM анализирует требования\n"
+            f"→ Architect проектирует\n"
+            f"→ Developer реализует\n"
+            f"→ QA тестирует\n\n"
+            f"Я уведомлю тебя о checkpoint'ах",
+            parse_mode="Markdown"
+        )
         state_manager.set_task_status(str(issue_number), "in_progress")
+
+    async def cancel_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Cancel current dialog."""
+        user = update.effective_user
+        user_id = user.id if user else 0
+
+        if not self.is_authorized(user_id):
+            await update.message.reply_text("⛔ Access denied")
+            return
+
+        state = self.get_user_state(user_id)
+        if state["dialog_state"] == DialogState.IDLE:
+            await update.message.reply_text("💤 Нет активного диалога")
+            return
+
+        state["dialog_state"] = DialogState.IDLE
+        state["requirements_data"] = {}
+        state["prd_draft"] = None
+
+        await update.message.reply_text("❌ Диалог отменён")
+
+    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user = update.effective_user
+        user_id = user.id if user else 0
+
+        if not self.is_authorized(user_id):
+            await update.message.reply_text("⛔ Access denied")
+            return
+
+        message = (
+            "📖 **Справка Solo Founder Agents**\n\n"
+            "**Управление задачами:**\n"
+            "/new — Создать новую задачу\n"
+            "/issues — Открытые задачи\n"
+            "/run <номер> — Запустить задачу\n\n"
+            "**Мониторинг:**\n"
+            "/status — Статус проекта\n"
+            "/checkpoint — Checkpoint'ы\n\n"
+            "**Управление:**\n"
+            "/approve — Одобрить checkpoint\n"
+            "/reject <причина> — Отклонить\n"
+            "/cancel — Отменить диалог\n\n"
+            "**Репозиторий:**\n"
+            "github.com/vovkins/agents-react-native-experiment"
+        )
+        await update.message.reply_text(message, parse_mode="Markdown")
 
     async def checkpoint_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -140,9 +267,15 @@ class TelegramBot:
             return
 
         message = "🛑 **Checkpoint'ы:**\n\n"
+        status_emoji = {"pending_review": "⏳", "approved": "✅", "rejected": "❌"}
+        
         for cp_id, cp_data in checkpoints.items():
-            status_emoji = {"pending_review": "⏳", "approved": "✅", "rejected": "❌"}.get(cp_data.get("status"), "❓")
-            message += f"{status_emoji} **{cp_id}**: `{cp_data.get('status')}`\n"
+            emoji = status_emoji.get(cp_data.get("status"), "❓")
+            message += f"{emoji} **{cp_id}**: `{cp_data.get('status')}`\n"
+            if cp_data.get("artifact_url"):
+                message += f"   📎 {cp_data['artifact_url']}\n"
+        
+        message += "\n💡 `/approve` или `/reject <причина>`"
         await update.message.reply_text(message, parse_mode="Markdown")
 
     async def approve_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -153,7 +286,7 @@ class TelegramBot:
             await update.message.reply_text("⛔ Access denied")
             return
 
-        await update.message.reply_text("✅ Checkpoint одобрен!")
+        await update.message.reply_text("✅ Checkpoint одобрен! Агенты продолжают работу.")
 
     async def reject_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -168,52 +301,199 @@ class TelegramBot:
             return
 
         reason = " ".join(context.args)
-        await update.message.reply_text(f"❌ Checkpoint отклонён: {reason}")
+        await update.message.reply_text(f"❌ Checkpoint отклонён: {reason}\n\nАгенты получат feedback и исправят.")
 
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        user = update.effective_user
-        user_id = user.id if user else 0
-
-        if not self.is_authorized(user_id):
-            await update.message.reply_text("⛔ Access denied")
-            return
-
-        message = (
-            "📖 **Справка Solo Founder Agents**\n\n"
-            "**Команды:**\n"
-            "/start — Начать работу\n"
-            "/status — Статус проекта\n"
-            "/issues — Открытые задачи\n"
-            "/run <номер> — Запустить задачу\n"
-            "/checkpoint — Статус checkpoint'ов\n"
-            "/approve — Одобрить checkpoint\n"
-            "/reject <причина> — Отклонить checkpoint\n"
-            "/help — Эта справка"
-        )
-        await update.message.reply_text(message, parse_mode="Markdown")
+    # === MESSAGE HANDLING ===
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle text messages based on dialog state."""
         user = update.effective_user
         user_id = user.id if user else 0
         text = update.message.text if update.message else ""
-        logger.info(f"Message from User ID: {user_id}: {text[:50]}...")
+        
+        logger.info(f"Message from {user_id}: {text[:100]}...")
 
         if not self.is_authorized(user_id):
             await update.message.reply_text("⛔ Access denied")
             return
 
-        await update.message.reply_text("💬 Я тебя услышал. Используй /help для списка команд.")
+        state = self.get_user_state(user_id)
+        dialog_state = state["dialog_state"]
+
+        if dialog_state == DialogState.COLLECTING_REQUIREMENTS:
+            await self._handle_requirements_input(user_id, text, update)
+        elif dialog_state == DialogState.CONFIRMING_PRD:
+            await self._handle_prd_confirmation(user_id, text, update)
+        else:
+            await update.message.reply_text(
+                "💬 Я тебя услышал.\n\n"
+                "Используй /new чтобы создать задачу\n"
+                "Или /help для списка команд"
+            )
+
+    async def _handle_requirements_input(self, user_id: int, text: str, update: Update) -> None:
+        """Process requirements input from user."""
+        state = self.get_user_state(user_id)
+        
+        # Store requirements
+        if "initial_description" not in state["requirements_data"]:
+            state["requirements_data"]["initial_description"] = text
+            
+            # Simulate PM agent questions (simplified for now)
+            await update.message.reply_text(
+                "📝 **Отлично! Уточни детали:**\n\n"
+                "1. Кто целевая аудитория?\n"
+                "2. Какие ключевые функции обязательны?\n"
+                "3. Есть ограничения по стеку/бюджету?\n\n"
+                "Или напиши 'готово' если всё понятно"
+            )
+        else:
+            # Collect answers
+            if "clarifications" not in state["requirements_data"]:
+                state["requirements_data"]["clarifications"] = []
+            state["requirements_data"]["clarifications"].append(text)
+            
+            if text.lower() in ["готово", "done", "всё", "ок"]:
+                # Generate PRD
+                await self._generate_prd(user_id, update)
+            else:
+                await update.message.reply_text(
+                    "✅ Записал.\n\n"
+                    "Напиши ещё что-нибудь или 'готово' для создания PRD"
+                )
+
+    async def _generate_prd(self, user_id: int, update: Update) -> None:
+        """Generate PRD from collected requirements."""
+        state = self.get_user_state(user_id)
+        reqs = state["requirements_data"]
+        
+        # Build PRD content
+        prd_content = f"""# Product Requirements Document
+
+## 1. Обзор
+
+**Описание:** {reqs.get('initial_description', 'N/A')}
+
+**Статус:** Draft
+**Дата:** {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}
+
+## 2. Целевая аудитория
+
+{reqs.get('clarifications', ['N/A'])[0] if reqs.get('clarifications') else 'N/A'}
+
+## 3. Ключевые функции
+
+{reqs.get('clarifications', ['N/A'])[1] if len(reqs.get('clarifications', [])) > 1 else 'N/A'}
+
+## 4. Ограничения
+
+{reqs.get('clarifications', ['N/A'])[2] if len(reqs.get('clarifications', [])) > 2 else 'Нет особых ограничений'}
+
+## 5. Технический стек
+
+- Frontend: React Native
+- Backend: Node.js
+- Styling: Tailwind CSS
+- UI Kit: shadcn/ui
+
+## 6. Успешные критерии
+
+- MVP готов к тестированию
+- Основные фичи работают
+- Код протестирован
+
+---
+*Сгенерировано PM Agent*
+"""
+
+        state["prd_draft"] = prd_content
+        state["dialog_state"] = DialogState.CONFIRMING_PRD
+
+        await update.message.reply_text(
+            f"📄 **PRD создан!**\n\n"
+            f"{prd_content[:500]}...\n\n"
+            f"✅ `/confirm` — сохранить в GitHub\n"
+            f"❌ `/cancel` — отменить",
+            parse_mode="Markdown"
+        )
+
+    async def confirm_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Confirm PRD and save to GitHub."""
+        user = update.effective_user
+        user_id = user.id if user else 0
+
+        if not self.is_authorized(user_id):
+            await update.message.reply_text("⛔ Access denied")
+            return
+
+        state = self.get_user_state(user_id)
+        
+        if state["dialog_state"] != DialogState.CONFIRMING_PRD or not state["prd_draft"]:
+            await update.message.reply_text("❌ Нет PRD для подтверждения. Используй /new")
+            return
+
+        # Save PRD to GitHub using artifact tools
+        try:
+            save_tool = SaveArtifactTool()
+            result = save_tool._run(
+                artifact_type="prd",
+                content=state["prd_draft"],
+                name="PRD"
+            )
+            
+            # Create GitHub issue for tracking
+            issue = create_github_issue(
+                title="New Feature Request (from PRD)",
+                body=f"Created from PRD dialog.\n\nSee docs/prd.md for details.",
+                labels=["feature"]
+            )
+            
+            # Reset state
+            state["dialog_state"] = DialogState.IDLE
+            state["requirements_data"] = {}
+            state["prd_draft"] = None
+
+            await update.message.reply_text(
+                f"✅ **PRD сохранён в GitHub!**\n\n"
+                f"📄 {result}\n"
+                f"📋 Issue #{issue.get('number', 'N/A')} создан\n\n"
+                f"Используй /run {issue.get('number', '')} чтобы запустить разработку",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Failed to save PRD: {e}")
+            await update.message.reply_text(f"❌ Ошибка сохранения: {str(e)[:100]}")
+
+    async def _handle_prd_confirmation(self, user_id: int, text: str, update: Update) -> None:
+        """Handle PRD confirmation dialog."""
+        if text.lower() in ["confirm", "да", "yes", "подтверждаю"]:
+            await self.confirm_command(update, None)
+        elif text.lower() in ["cancel", "нет", "no", "отмена"]:
+            await self.cancel_command(update, None)
+        else:
+            await update.message.reply_text(
+                "⚠️ Не понял ответ.\n\n"
+                "✅ `/confirm` — сохранить PRD\n"
+                "❌ `/cancel` — отменить"
+            )
 
     def setup_handlers(self) -> None:
         self.app = Application.builder().token(self.token).build()
+        
+        # Commands
         self.app.add_handler(CommandHandler("start", self.start_command))
+        self.app.add_handler(CommandHandler("new", self.new_command))
         self.app.add_handler(CommandHandler("status", self.status_command))
         self.app.add_handler(CommandHandler("issues", self.issues_command))
         self.app.add_handler(CommandHandler("run", self.run_command))
         self.app.add_handler(CommandHandler("checkpoint", self.checkpoint_command))
         self.app.add_handler(CommandHandler("approve", self.approve_command))
         self.app.add_handler(CommandHandler("reject", self.reject_command))
+        self.app.add_handler(CommandHandler("cancel", self.cancel_command))
+        self.app.add_handler(CommandHandler("confirm", self.confirm_command))
         self.app.add_handler(CommandHandler("help", self.help_command))
+        
+        # Messages
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
     def run(self) -> None:
@@ -225,8 +505,10 @@ class TelegramBot:
 
 bot = TelegramBot()
 
+
 def run_bot() -> None:
     bot.run()
+
 
 if __name__ == "__main__":
     run_bot()
