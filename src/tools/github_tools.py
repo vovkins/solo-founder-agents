@@ -145,7 +145,8 @@ def read_file_from_repo(path: str, branch: str = "main") -> str:
     Returns:
         File content as string
     """
-    return github_client.read_file(path, branch)
+    file = github_client.get_file(path, branch)
+    return file.decoded_content.decode("utf-8")
 
 
 def create_file_in_repo(
