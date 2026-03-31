@@ -269,6 +269,93 @@ class Pipeline:
         """
         return self.current_stage == PipelineStage.COMPLETE
 
+    def run_full_pipeline(
+        self,
+        issue_number: int,
+        founder_vision: str,
+        on_checkpoint: Optional[Callable] = None,
+        on_progress: Optional[Callable] = None,
+    ) -> dict:
+        """Run the full pipeline for a task.
+
+        Args:
+            issue_number: GitHub Issue number
+            founder_vision: Founder's product vision (from PRD)
+            on_checkpoint: Callback for checkpoint notifications
+            on_progress: Callback for progress updates
+
+        Returns:
+            Final results
+        """
+        results = {"issue_number": issue_number, "phases": {}}
+
+        try:
+            # Phase 1: Requirements (if PRD not already created)
+            if on_progress:
+                on_progress("requirements", "Анализирую требования...")
+            
+            req_result = self.run_requirements_phase(founder_vision)
+            results["phases"]["requirements"] = req_result
+
+            # Checkpoint 1: PRD
+            if on_checkpoint:
+                on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/prd.md"])
+
+            # Phase 2: Design
+            if on_progress:
+                on_progress("design", "Проектирую архитектуру...")
+            
+            design_result = self.run_design_phase()
+            results["phases"]["design"] = design_result
+
+            # Checkpoint 2: System Design
+            if on_checkpoint:
+                on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/system-design.md"])
+
+            # Phase 3: Implementation
+            if on_progress:
+                on_progress("implementation", "Разрабатываю код...")
+            
+            impl_result = self.run_implementation_phase(issue_number)
+            results["phases"]["implementation"] = impl_result
+
+            pr_url = impl_result.get("pr_url")
+            if pr_url:
+                # Checkpoint 3: Implementation
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_3, [pr_url])
+
+                # Phase 4: QA
+                if on_progress:
+                    on_progress("qa", "Тестирую...")
+                
+                qa_result = self.run_qa_phase(pr_url)
+                results["phases"]["qa"] = qa_result
+
+                # Checkpoint 4: QA passed
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
+
+            # Phase 5: Documentation
+            if on_progress:
+                on_progress("documentation", "Обновляю документацию...")
+            
+            doc_result = self.run_documentation_phase()
+            results["phases"]["documentation"] = doc_result
+
+            # Checkpoint 5: Complete
+            if on_checkpoint:
+                on_checkpoint(Checkpoint.CHECKPOINT_5, results.get("pr_urls", []))
+
+            results["status"] = "complete"
+
+        except Exception as e:
+            results["status"] = "error"
+            results["error"] = str(e)
+            print(f"Pipeline error: {e}")
+
+        return results
+
 
 # Global pipeline instance
 pipeline = Pipeline()

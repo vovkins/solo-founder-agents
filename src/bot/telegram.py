@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import threading
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
@@ -16,7 +17,7 @@ from telegram.ext import (
 )
 
 from config.settings import settings
-from src.pipeline import pipeline
+from src.pipeline import pipeline, Checkpoint
 from src.tools.state import state_manager
 from src.tools import list_open_issues, create_github_issue
 from src.tools.artifact_tools import SaveArtifactTool
@@ -54,6 +55,9 @@ class TelegramBot:
 
         # Dialog state per user
         self.user_states: Dict[int, Dict[str, Any]] = {}
+        
+        # Active pipelines (issue_number -> thread)
+        self.active_pipelines: Dict[str, threading.Thread] = {}
 
     def is_authorized(self, user_id: int) -> bool:
         if not self.authorized_users:
@@ -198,6 +202,12 @@ class TelegramBot:
             await update.message.reply_text("❌ Номер задачи должен быть числом")
             return
 
+        # Check if already running
+        issue_key = str(issue_number)
+        if issue_key in self.active_pipelines and self.active_pipelines[issue_key].is_alive():
+            await update.message.reply_text(f"⏳ Задача #{issue_number} уже выполняется")
+            return
+
         await update.message.reply_text(
             f"🚀 **Запускаю задачу #{issue_number}**\n\n"
             f"Агенты приступают к работе:\n"
@@ -208,7 +218,112 @@ class TelegramBot:
             f"Я уведомлю тебя о checkpoint'ах",
             parse_mode="Markdown"
         )
-        state_manager.set_task_status(str(issue_number), "in_progress")
+        state_manager.set_task_status(issue_key, "in_progress")
+
+        # Start pipeline in background thread
+        chat_id = update.effective_chat.id if update.effective_chat else user_id
+        
+        def run_pipeline_thread():
+            """Run pipeline in background and send updates."""
+            import asyncio
+            
+            # Get PRD content as founder_vision
+            founder_vision = "Implement the feature described in docs/prd.md"
+            try:
+                from src.tools.github_tools import read_file_from_repo
+                prd_content = read_file_from_repo("docs/prd.md", "main")
+                if prd_content:
+                    founder_vision = prd_content[:2000]  # Limit size
+            except Exception as e:
+                logger.warning(f"Could not read PRD: {e}")
+
+            # Create new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                # Callback for progress updates
+                def on_progress(phase: str, message: str):
+                    logger.info(f"Pipeline progress: {phase} - {message}")
+                    # Send Telegram update
+                    async def send_progress():
+                        try:
+                            await self.app.bot.send_message(
+                                chat_id=chat_id,
+                                text=f"📊 **{phase.title()}**: {message}",
+                                parse_mode="Markdown"
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send progress: {e}")
+                    loop.create_task(send_progress())
+                
+                # Callback for checkpoints
+                def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
+                    logger.info(f"Checkpoint reached: {checkpoint}")
+                    state_manager.set_checkpoint(
+                        checkpoint.value,
+                        "pending_review",
+                        artifacts
+                    )
+                    # Send checkpoint notification
+                    async def send_checkpoint():
+                        artifact_list = "\n".join([f"  • {a}" for a in artifacts])
+                        try:
+                            await self.app.bot.send_message(
+                                chat_id=chat_id,
+                                text=f"🛑 **Checkpoint: {checkpoint.value}**\n\n"
+                                     f"Артефакты для проверки:\n{artifact_list}\n\n"
+                                     f"✅ `/approve` — одобрить\n"
+                                     f"❌ `/reject <причина>` — отклонить",
+                                parse_mode="Markdown"
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send checkpoint: {e}")
+                    loop.create_task(send_checkpoint())
+                
+                # Run the pipeline
+                result = pipeline.run_full_pipeline(
+                    issue_number=issue_number,
+                    founder_vision=founder_vision,
+                    on_checkpoint=on_checkpoint,
+                    on_progress=on_progress,
+                )
+                
+                # Send final result
+                async def send_result():
+                    if result.get("status") == "complete":
+                        pr_urls = result.get("phases", {}).get("implementation", {}).get("pr_url")
+                        msg = f"✅ **Задача #{issue_number} завершена!**\n\n"
+                        if pr_urls:
+                            msg += f"📎 PR: {pr_urls}\n\n"
+                        msg += "Все фазы выполнены успешно."
+                    else:
+                        error = result.get("error", "Unknown error")
+                        msg = f"❌ **Ошибка выполнения задачи #{issue_number}**\n\n{error}"
+                    
+                    try:
+                        await self.app.bot.send_message(
+                            chat_id=chat_id,
+                            text=msg,
+                            parse_mode="Markdown"
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to send result: {e}")
+                    
+                    state_manager.set_task_status(issue_key, result.get("status", "error"))
+                
+                loop.run_until_complete(send_result())
+                
+            finally:
+                loop.close()
+                # Clean up
+                if issue_key in self.active_pipelines:
+                    del self.active_pipelines[issue_key]
+
+        # Start thread
+        thread = threading.Thread(target=run_pipeline_thread, daemon=True)
+        self.active_pipelines[issue_key] = thread
+        thread.start()
 
     async def cancel_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Cancel current dialog."""
