@@ -13,7 +13,7 @@ from src.agents import (
     qa_agent,
     tech_writer_agent,
 )
-from src.crews import run_core_crew, run_dev_crew
+from src.crews import run_dev_crew
 from src.tools.state import state_manager
 
 
@@ -59,7 +59,9 @@ class Pipeline:
         }
 
     def run_requirements_phase(self, founder_vision: str) -> dict:
-        """Run the requirements phase (PM + Analyst).
+        """Run the requirements phase (PM + Analyst + Architect).
+
+        Uses separate crews to avoid context overflow.
 
         Args:
             founder_vision: Founder's product vision
@@ -72,20 +74,44 @@ class Pipeline:
         print("=" * 50)
 
         self.current_stage = PipelineStage.REQUIREMENTS
+        results = {"artifacts": {}}
+
+        # Step 1: PM Crew (requirements + PRD + backlog)
+        print("\n--- Step 1/3: PM Crew ---")
         state_manager.update_agent_state("pm", "working", "collecting_requirements")
-
-        # Run core crew for requirements
-        result = run_core_crew(founder_vision)
-
-        self.state["prd_path"] = result.get("artifacts", {}).get("prd")
-
+        from src.crews import run_pm_crew
+        pm_result = run_pm_crew(founder_vision)
+        results["artifacts"]["prd"] = pm_result.get("artifacts", {}).get("prd")
+        self.state["prd_path"] = results["artifacts"]["prd"]
         state_manager.update_agent_state("pm", "idle")
-        self.current_stage = PipelineStage.DESIGN
+        print("✅ PM Crew completed")
 
-        return result
+        # Step 2: Analyst Crew (feature decomposition + task specs)
+        print("\n--- Step 2/3: Analyst Crew ---")
+        state_manager.update_agent_state("analyst", "working", "decomposing_features")
+        from src.crews import run_analyst_crew
+        analyst_result = run_analyst_crew()
+        results["artifacts"]["task_specs"] = analyst_result.get("artifacts", {}).get("task_specs")
+        state_manager.update_agent_state("analyst", "idle")
+        print("✅ Analyst Crew completed")
+
+        # Step 3: Architect Crew (architecture + system design)
+        print("\n--- Step 3/3: Architect Crew ---")
+        state_manager.update_agent_state("architect", "working", "designing_architecture")
+        from src.crews import run_architect_crew
+        architect_result = run_architect_crew()
+        results["artifacts"]["system_design"] = architect_result.get("artifacts", {}).get("system_design")
+        results["artifacts"]["standards"] = architect_result.get("artifacts", {}).get("standards")
+        state_manager.update_agent_state("architect", "idle")
+        print("✅ Architect Crew completed")
+
+        self.current_stage = PipelineStage.DESIGN
+        results["status"] = "completed"
+
+        return results
 
     def run_design_phase(self) -> dict:
-        """Run the design phase (Architect + Designer).
+        """Run the design phase (UI/UX).
 
         Returns:
             Results from the phase
@@ -94,12 +120,12 @@ class Pipeline:
         print("🎨 PHASE: Design")
         print("=" * 50)
 
-        state_manager.update_agent_state("architect", "working", "creating_design")
+        state_manager.update_agent_state("designer", "working", "creating_ui_specs")
 
-        # Architecture is done in core_crew
-        # Designer creates UI specs here
+        # Architecture is done in requirements phase (architect_crew)
+        # Designer creates UI specs here (future: add designer_crew)
 
-        state_manager.update_agent_state("architect", "idle")
+        state_manager.update_agent_state("designer", "idle")
         self.current_stage = PipelineStage.IMPLEMENTATION
 
         return {"status": "design_complete"}
