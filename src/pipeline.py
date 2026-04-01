@@ -326,6 +326,10 @@ class Pipeline:
             # Checkpoint 1: PRD
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/prd.md"])
+                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_1, timeout_minutes=60):
+                    results["status"] = "rejected"
+                    results["error"] = "Checkpoint 1 rejected or timed out"
+                    return results
 
             # Phase 2: Design
             if on_progress:
@@ -337,6 +341,10 @@ class Pipeline:
             # Checkpoint 2: System Design
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/system-design.md"])
+                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_2, timeout_minutes=60):
+                    results["status"] = "rejected"
+                    results["error"] = "Checkpoint 2 rejected or timed out"
+                    return results
 
             # Phase 3: Implementation
             if on_progress:
@@ -350,6 +358,10 @@ class Pipeline:
                 # Checkpoint 3: Implementation
                 if on_checkpoint:
                     on_checkpoint(Checkpoint.CHECKPOINT_3, [pr_url])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_3, timeout_minutes=60):
+                        results["status"] = "rejected"
+                        results["error"] = "Checkpoint 3 rejected or timed out"
+                        return results
 
                 # Phase 4: QA
                 if on_progress:
@@ -361,6 +373,10 @@ class Pipeline:
                 # Checkpoint 4: QA passed
                 if on_checkpoint:
                     on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4, timeout_minutes=60):
+                        results["status"] = "rejected"
+                        results["error"] = "Checkpoint 4 rejected or timed out"
+                        return results
 
             # Phase 5: Documentation
             if on_progress:
@@ -372,6 +388,10 @@ class Pipeline:
             # Checkpoint 5: Complete
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_5, results.get("pr_urls", []))
+                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_5, timeout_minutes=60):
+                    results["status"] = "rejected"
+                    results["error"] = "Checkpoint 5 rejected or timed out"
+                    return results
 
             results["status"] = "complete"
 
@@ -382,6 +402,45 @@ class Pipeline:
 
         return results
 
+    def wait_for_checkpoint_approval(self, checkpoint: 'Checkpoint', timeout_minutes: int = 60) -> bool:
+        """Wait for checkpoint approval with timeout.
 
-# Global pipeline instance
+        Args:
+            checkpoint: Checkpoint to wait for
+            timeout_minutes: Maximum time to wait in minutes (default: 60)
+
+        Returns:
+            True if approved, False if rejected or timeout
+        """
+        import time
+
+        checkpoint_id = checkpoint.value
+        start_time = time.time()
+        timeout_seconds = timeout_minutes * 60
+
+        print(f"⏳ Waiting for checkpoint {checkpoint_id} approval (timeout: {timeout_minutes} min)...")
+
+        while True:
+            # Check checkpoint status
+            cp_data = state_manager.get_checkpoint(checkpoint_id)
+            if cp_data:
+                status = cp_data.get("status")
+                if status == "approved":
+                    print(f"✅ Checkpoint {checkpoint_id} approved!")
+                    return True
+                elif status == "rejected":
+                    reason = cp_data.get("notes", "No reason provided")
+                    print(f"❌ Checkpoint {checkpoint_id} rejected: {reason}")
+                    return False
+
+            # Check timeout
+            elapsed = time.time() - start_time
+            if elapsed >= timeout_seconds:
+                print(f"⏰ Checkpoint {checkpoint_id} timed out after {timeout_minutes} minutes")
+                return False
+
+            # Wait 5 seconds before checking again
+            time.sleep(5)
+
+    def run_full_pipeline(
 pipeline = Pipeline()

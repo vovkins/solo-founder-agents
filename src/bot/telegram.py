@@ -245,7 +245,7 @@ class TelegramBot:
                 # Callback for progress updates
                 def on_progress(phase: str, message: str):
                     logger.info(f"Pipeline progress: {phase} - {message}")
-                    # Send Telegram update
+                    # Send Telegram update synchronously
                     async def send_progress():
                         try:
                             await self.app.bot.send_message(
@@ -255,7 +255,8 @@ class TelegramBot:
                             )
                         except Exception as e:
                             logger.error(f"Failed to send progress: {e}")
-                    loop.create_task(send_progress())
+                    # Use run_coroutine_threadsafe for immediate execution
+                    asyncio.run_coroutine_threadsafe(send_progress(), loop)
                 
                 # Callback for checkpoints
                 def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
@@ -265,7 +266,7 @@ class TelegramBot:
                         "pending_review",
                         artifacts
                     )
-                    # Send checkpoint notification
+                    # Send checkpoint notification synchronously
                     async def send_checkpoint():
                         artifact_list = "\n".join([f"  • {a}" for a in artifacts])
                         try:
@@ -279,7 +280,8 @@ class TelegramBot:
                             )
                         except Exception as e:
                             logger.error(f"Failed to send checkpoint: {e}")
-                    loop.create_task(send_checkpoint())
+                    # Use run_coroutine_threadsafe for immediate execution
+                    asyncio.run_coroutine_threadsafe(send_checkpoint(), loop)
                 
                 # Run the pipeline
                 result = pipeline.run_full_pipeline(
@@ -404,7 +406,24 @@ class TelegramBot:
             await update.message.reply_text("⛔ Access denied")
             return
 
-        await update.message.reply_text("✅ Checkpoint одобрен! Агенты продолжают работу.")
+        # Get current checkpoint from state
+        state = state_manager.state
+        checkpoints = state.get("checkpoints", {})
+        
+        # Find pending checkpoint
+        pending_checkpoint = None
+        for cp_id, cp_data in checkpoints.items():
+            if cp_data.get("status") == "pending_review":
+                pending_checkpoint = cp_id
+                break
+        
+        if not pending_checkpoint:
+            await update.message.reply_text("⚠️ Нет checkpoint'ов для одобрения.")
+            return
+        
+        # Approve checkpoint
+        state_manager.approve_checkpoint(pending_checkpoint)
+        await update.message.reply_text(f"✅ Checkpoint {pending_checkpoint} одобрен! Агенты продолжают работу.")
 
     async def reject_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -419,7 +438,28 @@ class TelegramBot:
             return
 
         reason = " ".join(context.args)
-        await update.message.reply_text(f"❌ Checkpoint отклонён: {reason}\n\nАгенты получат feedback и исправят.")
+
+        # Get current checkpoint from state
+        state = state_manager.state
+        checkpoints = state.get("checkpoints", {})
+        
+        # Find pending checkpoint
+        pending_checkpoint = None
+        for cp_id, cp_data in checkpoints.items():
+            if cp_data.get("status") == "pending_review":
+                pending_checkpoint = cp_id
+                break
+        
+        if not pending_checkpoint:
+            await update.message.reply_text("⚠️ Нет checkpoint'ов для отклонения.")
+            return
+        
+        # Reject checkpoint with reason
+        state_manager.reject_checkpoint(pending_checkpoint, reason)
+        await update.message.reply_text(
+            f"❌ Checkpoint {pending_checkpoint} отклонён: {reason}\n\n"
+            f"Агенты получат feedback и исправят."
+        )
 
     # === MESSAGE HANDLING ===
 
