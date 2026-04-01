@@ -12,6 +12,9 @@ from .github_tools import (
     create_file_in_repo,
     update_file_in_repo,
     create_pull_request,
+    CreateGitHubIssueTool,
+    ListOpenIssuesTool,
+    CreatePullRequestTool,
 )
 from .storage import (
     save_artifact,
@@ -29,6 +32,16 @@ from .artifact_tools import (
     SyncArtifactsTool,
     get_artifact_tools,
 )
+
+
+def get_github_tools():
+    """Get GitHub tools for CrewAI agents."""
+    return [
+        CreateGitHubIssueTool(),
+        CreatePullRequestTool(),
+        ListOpenIssuesTool(),
+    ]
+
 
 __all__ = [
     # GitHub Client
@@ -66,4 +79,9 @@ __all__ = [
     "ReadArtifactTool",
     "SyncArtifactsTool",
     "get_artifact_tools",
+    # GitHub Tools
+    "CreateGitHubIssueTool",
+    "ListOpenIssuesTool",
+    "CreatePullRequestTool",
+    "get_github_tools",
 ]

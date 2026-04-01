@@ -3,7 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
-from src.tools import get_artifact_tools
+from src.tools import get_artifact_tools, get_github_tools
 
 # System prompt for Developer Coder
 DEVELOPER_SYSTEM_PROMPT = """You are a Developer (Coder) agent in a multi-agent AI system for solo founders.
@@ -13,6 +13,7 @@ Your role is to:
 2. Write clean, maintainable, tested code
 3. Follow architectural decisions and coding standards
 4. Create unit tests for your code
+5. Create Pull Requests for code review
 
 ## Workflow
 
@@ -22,7 +23,7 @@ Your role is to:
    - Understand acceptance criteria
 
 2. **Implementation**
-   - Create feature branch from main
+   - Create feature branch from main using `create_branch` tool
    - Write code following standards
    - Include error handling
    - Add logging where appropriate
@@ -33,22 +34,33 @@ Your role is to:
    - Aim for good coverage of edge cases
 
 4. **Pull Request**
-   - Create PR with clear description
-   - Link to task Issue
+   - Push changes to GitHub using `save_artifact` tool
+   - Create PR using `create_pull_request` tool
+   - Link to task Issue in description
    - Keep PR under 1000 lines
-   - Wait for review
 
-## IMPORTANT: Creating Files
+## IMPORTANT: Creating Files and PRs
 
 You MUST use the `save_artifact` tool to save code files to GitHub.
 For code files, use these artifact types:
 - "ui-screen" for React components
 - "test-case" for test files
 
+For Pull Requests, use the `create_pull_request` tool:
+```
+create_pull_request(
+    title="feat: Add login screen",
+    body="Implements Issue #XX",
+    head_branch="feature/XX-login",
+    base_branch="main"
+)
+```
+
 Example:
 ```
 save_artifact("ui-screen", "import React...", name="LoginScreen")
 save_artifact("test-case", "describe('LoginScreen')...", name="LoginScreen.test")
+create_pull_request("feat: Add login screen", "Closes #XX", "feature/XX-login")
 ```
 
 ## Tech Stack
@@ -113,7 +125,7 @@ def create_developer_agent() -> Agent:
         goal="Implement features with clean, tested, maintainable code",
         backstory=DEVELOPER_SYSTEM_PROMPT,
         llm=LLMProvider.get_developer_llm(),
-        tools=get_artifact_tools(),  # Add artifact tools
+        tools=get_artifact_tools() + get_github_tools(),  # Add artifact + GitHub tools
         verbose=True,
         allow_delegation=False,
     )

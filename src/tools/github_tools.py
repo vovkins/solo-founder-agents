@@ -224,14 +224,22 @@ def create_pull_request(
 
 class CreateGitHubIssueToolInput(BaseModel):
     """Input schema for GitHub issue creation."""
-    title: str
-    body: str
-    labels: Optional[List[str]] = None
+    title: str = Field(description="Issue title")
+    body: str = Field(description="Issue description")
+    labels: Optional[List[str]] = Field(default=None, description="Optional labels")
 
 
 class ListOpenIssuesToolInput(BaseModel):
     """Input schema for listing open issues."""
-    labels: Optional[List[str]] = None
+    labels: Optional[List[str]] = Field(default=None, description="Filter by labels")
+
+
+class CreatePullRequestToolInput(BaseModel):
+    """Input schema for PR creation."""
+    title: str = Field(description="PR title")
+    body: str = Field(description="PR description")
+    head_branch: str = Field(description="Head branch name")
+    base_branch: str = Field(default="main", description="Base branch name")
 
 
 # ===========================================
@@ -244,10 +252,11 @@ class CreateGitHubIssueTool(BaseTool):
 
     name: str = "create_github_issue"
     description: str = "Create a GitHub issue with title, body, and optional labels"
-    args_schema = CreateGitHubIssueToolInput
+    args_schema: type[BaseModel] = CreateGitHubIssueToolInput
 
     def _run(self, title: str, body: str, labels: Optional[List[str]] = None) -> str:
-        return create_github_issue(title, body, labels)
+        result = create_github_issue(title, body, labels)
+        return f"✅ Created issue #{result['number']}: {result['url']}"
 
 
 class ListOpenIssuesTool(BaseTool):
@@ -255,46 +264,48 @@ class ListOpenIssuesTool(BaseTool):
 
     name: str = "list_open_issues"
     description: str = "List all open GitHub issues in the repository"
-    args_schema = ListOpenIssuesToolInput
+    args_schema: type[BaseModel] = ListOpenIssuesToolInput
 
     def _run(self, labels: Optional[List[str]] = None) -> str:
         issues = list_open_issues(labels)
+        if not issues:
+            return "No open issues found."
         return "\n".join([f"#{issue['number']} — {issue['title']}" for issue in issues])
+
+
+class CreatePullRequestTool(BaseTool):
+    """Tool for creating Pull Requests."""
+
+    name: str = "create_pull_request"
+    description: str = "Create a Pull Request with title, body, and branch names"
+    args_schema: type[BaseModel] = CreatePullRequestToolInput
+
+    def _run(
+        self,
+        title: str,
+        body: str,
+        head_branch: str,
+        base_branch: str = "main",
+    ) -> str:
+        """Create a Pull Request.
+
+        Args:
+            title: PR title
+            body: PR description
+            head_branch: Head branch name
+            base_branch: Base branch name (default: main)
+
+        Returns:
+            URL of created PR or error message
+        """
+        try:
+            pr_url = create_pull_request(title, body, head_branch, base_branch)
+            return f"✅ Pull Request created: {pr_url}"
+        except Exception as e:
+            return f"❌ Failed to create PR: {str(e)}\n\nMake sure the branch exists and has been pushed to GitHub."
 
 
 # Export tools
 create_github_issue_tool = CreateGitHubIssueTool()
 list_open_issues_tool = ListOpenIssuesTool()
-
-
-# ===========================================
-# CrewAI Tools
-# ===========================================
-
-
-class CreateGitHubIssueTool(BaseTool):
-    """Tool for creating GitHub issues."""
-
-    name: str = "create_github_issue"
-    description: str = "Create a GitHub issue with title, body, and optional labels"
-    args_schema = CreateGitHubIssueToolInput
-
-    def _run(self, title: str, body: str, labels: Optional[List[str]] = None) -> str:
-        return create_github_issue(title, body, labels)
-
-
-class ListOpenIssuesTool(BaseTool):
-    """Tool for listing open GitHub issues."""
-
-    name: str = "list_open_issues"
-    description: str = "List all open GitHub issues in the repository"
-    args_schema = ListOpenIssuesToolInput
-
-    def _run(self, labels: Optional[List[str]] = None) -> str:
-        issues = list_open_issues(labels)
-        return "\n".join([f"#{issue['number']} — {issue['title']}" for issue in issues])
-
-
-# Export tools
-create_github_issue_tool = CreateGitHubIssueTool()
-list_open_issues_tool = ListOpenIssuesTool()
+create_pull_request_tool = CreatePullRequestTool()
