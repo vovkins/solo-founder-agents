@@ -1,11 +1,30 @@
 """CrewAI-compatible tools for artifact management."""
 
+import logging
 from typing import Optional, Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from .artifact_manager import ArtifactManager, ArtifactType, get_artifact_manager
+from .file_permissions import check_file_permission, get_role_for_crew
+
+logger = logging.getLogger(__name__)
+
+# Current role context (set by crew before running)
+_current_role: str = "developer"
+
+
+def set_current_role(role: str) -> None:
+    """Set the current role for permission checks."""
+    global _current_role
+    _current_role = role
+    logger.debug(f"Current role set to: {role}")
+
+
+def get_current_role() -> str:
+    """Get the current role for permission checks."""
+    return _current_role
 
 
 class SaveArtifactInput(BaseModel):
@@ -68,14 +87,45 @@ class SaveArtifactTool(BaseTool):
 
         artifact_type_enum = type_map[artifact_type]
 
+        # Determine file path for permission check (same logic as artifact_manager)
+        from datetime import datetime
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        
+        if artifact_type_enum == ArtifactType.PRD:
+            filepath = "docs/prd.md"
+        elif artifact_type_enum == ArtifactType.SYSTEM_DESIGN:
+            filepath = "docs/system-design.md"
+        elif artifact_type_enum == ArtifactType.ADR:
+            filepath = f"docs/adr/{name or timestamp}.md"
+        elif artifact_type_enum == ArtifactType.DESIGN_SYSTEM:
+            filepath = "docs/design-system.md"
+        elif artifact_type_enum == ArtifactType.UI_SCREEN:
+            filepath = f"docs/ui/screens/{name or timestamp}.md"
+        elif artifact_type_enum == ArtifactType.USER_FLOW:
+            filepath = f"docs/user-flows/{name or timestamp}.md"
+        elif artifact_type_enum == ArtifactType.TEST_CASE:
+            filepath = f"docs/tests/{name or timestamp}-test-case.md"
+        elif artifact_type_enum == ArtifactType.TEST_RUN_LOG:
+            filepath = f"docs/tests/{name or timestamp}-run-log.md"
+        else:
+            filepath = f"docs/{name or timestamp}.md"
+
+        # Check permissions
+        role = get_current_role()
+        allowed, reason = check_file_permission(role, filepath, "create")
+        
+        if not allowed:
+            logger.warning(f"Permission denied for {role} on {filepath}: {reason}")
+            return f"⚠️ Permission denied: {reason}\n\nPlease create files only in your designated directories."
+
+        # Save artifact
         artifact = self.artifact_manager.create_artifact(
             artifact_type=artifact_type_enum,
             content=content,
             name=name,
         )
-
         url = self.artifact_manager.save_artifact(artifact)
-        return f"Artifact saved to: {url}"
+        return f"✅ Artifact saved to: {url}"
 
 
 class ReadArtifactInput(BaseModel):
