@@ -13,7 +13,7 @@ from src.agents import (
     qa_agent,
     tech_writer_agent,
 )
-from src.crews import run_dev_crew
+from src.crews import run_core_crew, run_dev_crew
 from src.tools.state import state_manager
 
 
@@ -59,9 +59,7 @@ class Pipeline:
         }
 
     def run_requirements_phase(self, founder_vision: str) -> dict:
-        """Run the requirements phase (PM + Analyst + Architect).
-
-        Uses separate crews to avoid context overflow.
+        """Run the requirements phase (PM + Analyst).
 
         Args:
             founder_vision: Founder's product vision
@@ -74,44 +72,20 @@ class Pipeline:
         print("=" * 50)
 
         self.current_stage = PipelineStage.REQUIREMENTS
-        results = {"artifacts": {}}
-
-        # Step 1: PM Crew (requirements + PRD + backlog)
-        print("\n--- Step 1/3: PM Crew ---")
         state_manager.update_agent_state("pm", "working", "collecting_requirements")
-        from src.crews import run_pm_crew
-        pm_result = run_pm_crew(founder_vision)
-        results["artifacts"]["prd"] = pm_result.get("artifacts", {}).get("prd")
-        self.state["prd_path"] = results["artifacts"]["prd"]
+
+        # Run core crew for requirements
+        result = run_core_crew(founder_vision)
+
+        self.state["prd_path"] = result.get("artifacts", {}).get("prd")
+
         state_manager.update_agent_state("pm", "idle")
-        print("✅ PM Crew completed")
-
-        # Step 2: Analyst Crew (feature decomposition + task specs)
-        print("\n--- Step 2/3: Analyst Crew ---")
-        state_manager.update_agent_state("analyst", "working", "decomposing_features")
-        from src.crews import run_analyst_crew
-        analyst_result = run_analyst_crew()
-        results["artifacts"]["task_specs"] = analyst_result.get("artifacts", {}).get("task_specs")
-        state_manager.update_agent_state("analyst", "idle")
-        print("✅ Analyst Crew completed")
-
-        # Step 3: Architect Crew (architecture + system design)
-        print("\n--- Step 3/3: Architect Crew ---")
-        state_manager.update_agent_state("architect", "working", "designing_architecture")
-        from src.crews import run_architect_crew
-        architect_result = run_architect_crew()
-        results["artifacts"]["system_design"] = architect_result.get("artifacts", {}).get("system_design")
-        results["artifacts"]["standards"] = architect_result.get("artifacts", {}).get("standards")
-        state_manager.update_agent_state("architect", "idle")
-        print("✅ Architect Crew completed")
-
         self.current_stage = PipelineStage.DESIGN
-        results["status"] = "completed"
 
-        return results
+        return result
 
     def run_design_phase(self) -> dict:
-        """Run the design phase (UI/UX).
+        """Run the design phase (Architect + Designer).
 
         Returns:
             Results from the phase
@@ -120,12 +94,12 @@ class Pipeline:
         print("🎨 PHASE: Design")
         print("=" * 50)
 
-        state_manager.update_agent_state("designer", "working", "creating_ui_specs")
+        state_manager.update_agent_state("architect", "working", "creating_design")
 
-        # Architecture is done in requirements phase (architect_crew)
-        # Designer creates UI specs here (future: add designer_crew)
+        # Architecture is done in core_crew
+        # Designer creates UI specs here
 
-        state_manager.update_agent_state("designer", "idle")
+        state_manager.update_agent_state("architect", "idle")
         self.current_stage = PipelineStage.IMPLEMENTATION
 
         return {"status": "design_complete"}
@@ -326,10 +300,6 @@ class Pipeline:
             # Checkpoint 1: PRD
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/prd.md"])
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_1, timeout_minutes=60):
-                    results["status"] = "rejected"
-                    results["error"] = "Checkpoint 1 rejected or timed out"
-                    return results
 
             # Phase 2: Design
             if on_progress:
@@ -341,10 +311,6 @@ class Pipeline:
             # Checkpoint 2: System Design
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/system-design.md"])
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_2, timeout_minutes=60):
-                    results["status"] = "rejected"
-                    results["error"] = "Checkpoint 2 rejected or timed out"
-                    return results
 
             # Phase 3: Implementation
             if on_progress:
@@ -358,10 +324,6 @@ class Pipeline:
                 # Checkpoint 3: Implementation
                 if on_checkpoint:
                     on_checkpoint(Checkpoint.CHECKPOINT_3, [pr_url])
-                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_3, timeout_minutes=60):
-                        results["status"] = "rejected"
-                        results["error"] = "Checkpoint 3 rejected or timed out"
-                        return results
 
                 # Phase 4: QA
                 if on_progress:
@@ -373,10 +335,6 @@ class Pipeline:
                 # Checkpoint 4: QA passed
                 if on_checkpoint:
                     on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
-                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4, timeout_minutes=60):
-                        results["status"] = "rejected"
-                        results["error"] = "Checkpoint 4 rejected or timed out"
-                        return results
 
             # Phase 5: Documentation
             if on_progress:
@@ -388,10 +346,6 @@ class Pipeline:
             # Checkpoint 5: Complete
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_5, results.get("pr_urls", []))
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_5, timeout_minutes=60):
-                    results["status"] = "rejected"
-                    results["error"] = "Checkpoint 5 rejected or timed out"
-                    return results
 
             results["status"] = "complete"
 
@@ -402,45 +356,6 @@ class Pipeline:
 
         return results
 
-    def wait_for_checkpoint_approval(self, checkpoint: 'Checkpoint', timeout_minutes: int = 60) -> bool:
-        """Wait for checkpoint approval with timeout.
 
-        Args:
-            checkpoint: Checkpoint to wait for
-            timeout_minutes: Maximum time to wait in minutes (default: 60)
-
-        Returns:
-            True if approved, False if rejected or timeout
-        """
-        import time
-
-        checkpoint_id = checkpoint.value
-        start_time = time.time()
-        timeout_seconds = timeout_minutes * 60
-
-        print(f"⏳ Waiting for checkpoint {checkpoint_id} approval (timeout: {timeout_minutes} min)...")
-
-        while True:
-            # Check checkpoint status
-            cp_data = state_manager.get_checkpoint(checkpoint_id)
-            if cp_data:
-                status = cp_data.get("status")
-                if status == "approved":
-                    print(f"✅ Checkpoint {checkpoint_id} approved!")
-                    return True
-                elif status == "rejected":
-                    reason = cp_data.get("notes", "No reason provided")
-                    print(f"❌ Checkpoint {checkpoint_id} rejected: {reason}")
-                    return False
-
-            # Check timeout
-            elapsed = time.time() - start_time
-            if elapsed >= timeout_seconds:
-                print(f"⏰ Checkpoint {checkpoint_id} timed out after {timeout_minutes} minutes")
-                return False
-
-            # Wait 5 seconds before checking again
-            time.sleep(5)
-
-    def run_full_pipeline(
+# Global pipeline instance
 pipeline = Pipeline()
