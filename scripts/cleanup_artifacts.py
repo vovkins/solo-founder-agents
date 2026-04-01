@@ -8,6 +8,7 @@ Preserves state files by default.
 
 import os
 import shutil
+import fnmatch
 from pathlib import Path
 from typing import List, Optional
 import logging
@@ -139,7 +140,6 @@ def create_clean_structure(base_path: Path, dry_run: bool = False) -> None:
 
 def main():
     import argparse
-    import fnmatch
 
     parser = argparse.ArgumentParser(description="Cleanup artifacts before pipeline run")
     parser.add_argument(
