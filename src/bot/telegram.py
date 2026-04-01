@@ -237,15 +237,11 @@ class TelegramBot:
             except Exception as e:
                 logger.warning(f"Could not read PRD: {e}")
 
-            # Create new event loop for this thread
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
             try:
                 # Callback for progress updates
                 def on_progress(phase: str, message: str):
                     logger.info(f"Pipeline progress: {phase} - {message}")
-                    # Send Telegram update synchronously
+                    # Send Telegram update synchronously using run_until_complete
                     async def send_progress():
                         try:
                             await self.app.bot.send_message(
@@ -255,8 +251,8 @@ class TelegramBot:
                             )
                         except Exception as e:
                             logger.error(f"Failed to send progress: {e}")
-                    # Use run_coroutine_threadsafe for immediate execution
-                    asyncio.run_coroutine_threadsafe(send_progress(), loop)
+                    # Run in the thread's event loop
+                    asyncio.run(send_progress())
                 
                 # Callback for checkpoints
                 def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
@@ -280,8 +276,8 @@ class TelegramBot:
                             )
                         except Exception as e:
                             logger.error(f"Failed to send checkpoint: {e}")
-                    # Use run_coroutine_threadsafe for immediate execution
-                    asyncio.run_coroutine_threadsafe(send_checkpoint(), loop)
+                    # Run in a new event loop (asyncio.run handles loop creation/cleanup)
+                    asyncio.run(send_checkpoint())
                 
                 # Run the pipeline
                 result = pipeline.run_full_pipeline(
@@ -314,10 +310,9 @@ class TelegramBot:
                     
                     state_manager.set_task_status(issue_key, result.get("status", "error"))
                 
-                loop.run_until_complete(send_result())
+                asyncio.run(send_result())
                 
             finally:
-                loop.close()
                 # Clean up
                 if issue_key in self.active_pipelines:
                     del self.active_pipelines[issue_key]
