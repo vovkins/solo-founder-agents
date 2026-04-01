@@ -485,42 +485,50 @@ class TelegramBot:
             )
 
     async def _handle_requirements_input(self, user_id: int, text: str, update: Update) -> None:
-        """Process requirements input from user."""
+        """Process requirements input from user - step by step dialog."""
         state = self.get_user_state(user_id)
+        reqs = state["requirements_data"]
         
-        # Store requirements
-        if "initial_description" not in state["requirements_data"]:
-            state["requirements_data"]["initial_description"] = text
-            
-            # Simulate PM agent questions (simplified for now)
+        # Step 0: Initial product description
+        if "initial_description" not in reqs:
+            reqs["initial_description"] = text
             await update.message.reply_text(
-                "📝 **Отлично! Уточни детали:**\n\n"
-                "1. Кто целевая аудитория?\n"
-                "2. Какие ключевые функции обязательны?\n"
-                "3. Есть ограничения по стеку/бюджету?\n\n"
-                "Или напиши 'готово' если всё понятно"
+                "📝 **Отлично! Теперь уточни детали:**\n\n"
+                "1️⃣ Кто целевая аудитория продукта?"
             )
-        else:
-            # Collect answers
-            if "clarifications" not in state["requirements_data"]:
-                state["requirements_data"]["clarifications"] = []
-            state["requirements_data"]["clarifications"].append(text)
-            
-            if text.lower() in ["готово", "done", "всё", "ок"]:
-                # Generate PRD
-                await self._generate_prd(user_id, update)
-            else:
-                await update.message.reply_text(
-                    "✅ Записал.\n\n"
-                    "Напиши ещё что-нибудь или 'готово' для создания PRD"
-                )
+            return
+        
+        # Step 1: Target audience
+        if "target_audience" not in reqs:
+            reqs["target_audience"] = text
+            await update.message.reply_text(
+                "✅ Записал аудиторию.\n\n"
+                "2️⃣ Какие ключевые функции обязательны для MVP?"
+            )
+            return
+        
+        # Step 2: Key features
+        if "key_features" not in reqs:
+            reqs["key_features"] = text
+            await update.message.reply_text(
+                "✅ Записал функции.\n\n"
+                "3️⃣ Есть ограничения по стеку/бюджету/срокам?\n"
+                "(Напиши 'нет' если ограничений нет)"
+            )
+            return
+        
+        # Step 3: Constraints (optional)
+        if "constraints" not in reqs:
+            reqs["constraints"] = text if text.lower() not in ["нет", "no", "н нету", "-"] else "Нет особых ограничений"
+            # All data collected - generate PRD
+            await self._generate_prd(user_id, update)
 
     async def _generate_prd(self, user_id: int, update: Update) -> None:
         """Generate PRD from collected requirements."""
         state = self.get_user_state(user_id)
         reqs = state["requirements_data"]
         
-        # Build PRD content
+        # Build PRD content from step-by-step collected data
         prd_content = f"""# Product Requirements Document
 
 ## 1. Обзор
@@ -532,15 +540,15 @@ class TelegramBot:
 
 ## 2. Целевая аудитория
 
-{reqs.get('clarifications', ['N/A'])[0] if reqs.get('clarifications') else 'N/A'}
+{reqs.get('target_audience', 'N/A')}
 
 ## 3. Ключевые функции
 
-{reqs.get('clarifications', ['N/A'])[1] if len(reqs.get('clarifications', [])) > 1 else 'N/A'}
+{reqs.get('key_features', 'N/A')}
 
 ## 4. Ограничения
 
-{reqs.get('clarifications', ['N/A'])[2] if len(reqs.get('clarifications', [])) > 2 else 'Нет особых ограничений'}
+{reqs.get('constraints', 'Нет особых ограничений')}
 
 ## 5. Технический стек
 
