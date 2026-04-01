@@ -7,7 +7,7 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from .artifact_manager import ArtifactManager, ArtifactType, get_artifact_manager
-from .file_permissions import check_file_permission, get_role_for_crew
+from .file_permissions import check_file_permission
 
 logger = logging.getLogger(__name__)
 
