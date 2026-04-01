@@ -15,62 +15,61 @@ logger = logging.getLogger(__name__)
 ROLE_FILE_PERMISSIONS: Dict[str, Dict[str, List[str]]] = {
     "pm": {
         "can_create": [
-            "docs/prd.md",
-            "docs/backlog*.md",
-            "docs/personas.md",
+            "docs/requirements/prd.md",
+            "docs/requirements/backlog*.md",
+            "docs/requirements/personas.md",
         ],
         "can_modify": [
-            "docs/prd.md",
-            "docs/backlog*.md",
+            "docs/requirements/prd.md",
+            "docs/requirements/backlog*.md",
         ],
         "read_only": [],
     },
     "analyst": {
         "can_create": [
-            "docs/task-specs.md",
-            "docs/dependency-map.md",
-            "docs/feature-*.md",
+            "docs/requirements/task-specs.md",
+            "docs/requirements/dependency-map.md",
+            "docs/requirements/feature-*.md",
         ],
         "can_modify": [
-            "docs/task-specs.md",
-            "docs/dependency-map.md",
-            "docs/feature-*.md",
+            "docs/requirements/task-specs.md",
+            "docs/requirements/dependency-map.md",
+            "docs/requirements/feature-*.md",
         ],
         "read_only": [
-            "docs/prd.md",
-            "docs/backlog*.md",
+            "docs/requirements/prd.md",
+            "docs/requirements/backlog*.md",
         ],
     },
     "architect": {
         "can_create": [
-            "docs/system-design.md",
-            "docs/standards.md",
+            "docs/design/system-design.md",
+            "docs/design/standards.md",
             "docs/adr/*.md",
         ],
         "can_modify": [
-            "docs/system-design.md",
-            "docs/standards.md",
+            "docs/design/system-design.md",
+            "docs/design/standards.md",
             "docs/adr/*.md",
         ],
         "read_only": [
-            "docs/prd.md",
-            "docs/backlog*.md",
+            "docs/requirements/prd.md",
+            "docs/requirements/task-specs.md",
         ],
     },
     "designer": {
         "can_create": [
-            "docs/design-system.md",
-            "docs/ui/**/*.md",
-            "docs/screens/*.md",
+            "docs/design/design-system.md",
+            "docs/design/ui/**/*.md",
         ],
         "can_modify": [
-            "docs/design-system.md",
-            "docs/ui/**/*.md",
+            "docs/design/design-system.md",
+            "docs/design/ui/**/*.md",
         ],
         "read_only": [
-            "docs/prd.md",
-            "docs/system-design.md",
-            "docs/standards.md",
+            "docs/requirements/prd.md",
+            "docs/design/system-design.md",
+            "docs/design/standards.md",
         ],
     },
     "developer": {
@@ -78,214 +77,175 @@ ROLE_FILE_PERMISSIONS: Dict[str, Dict[str, List[str]]] = {
             "src/**",
             "docs/tests/**/*.md",
             "docs/adr/pull-request-*.md",
-            "docs/adr/branch-*.md",
-            "docs/ui/screens/*.md",  # Can add implementation details to UI specs
         ],
         "can_modify": [
             "src/**",
-            "docs/tests/**",
-            "docs/adr/pull-request-*.md",
+            "docs/tests/**/*.md",
         ],
         "read_only": [
-            "docs/prd.md",
-            "docs/system-design.md",
-            "docs/design-system.md",
-            "docs/standards.md",
+            "docs/requirements/**",
+            "docs/design/**",
+            "docs/adr/*.md",
         ],
     },
     "qa": {
         "can_create": [
             "docs/tests/**/*.md",
-            "docs/qa/**/*.md",
+            "docs/test-reports/**/*.md",
         ],
         "can_modify": [
-            "docs/tests/**",
+            "docs/tests/**/*.md",
+            "docs/test-reports/**/*.md",
         ],
         "read_only": [
-            "docs/prd.md",
-            "docs/system-design.md",
+            "docs/requirements/**",
+            "docs/design/**",
             "src/**",
         ],
     },
     "reviewer": {
-        "can_create": [
-            "docs/reviews/**/*.md",
-        ],
-        "can_modify": [
-            "docs/reviews/**",
-        ],
+        "can_create": [],
+        "can_modify": [],
         "read_only": [
-            "docs/prd.md",
-            "docs/system-design.md",
             "src/**",
+            "docs/**",
         ],
     },
     "tech_writer": {
         "can_create": [
-            "docs/**/*.md",  # Can create documentation anywhere
-            "README.md",
+            "docs/README.md",
+            "docs/user-guide.md",
+            "docs/api-docs.md",
         ],
         "can_modify": [
-            "docs/**/*.md",
-            "README.md",
+            "docs/README.md",
+            "docs/user-guide.md",
+            "docs/api-docs.md",
         ],
         "read_only": [
-            "src/**",  # Cannot modify code, only document it
+            "docs/**",
+            "src/**",
         ],
     },
 }
 
 
-def matches_pattern(filepath: str, pattern: str) -> bool:
-    """Check if filepath matches a glob pattern.
-    
+def matches_pattern(filename: str, pattern: str) -> bool:
+    """Check if filename matches a pattern with wildcards.
+
     Args:
-        filepath: File path to check
-        pattern: Glob pattern (e.g., "docs/**/*.md", "src/**")
-    
+        filename: File path to check
+        pattern: Pattern with wildcards (e.g., "docs/requirements/*.md")
+
     Returns:
-        True if filepath matches pattern
+        True if matches, False otherwise
     """
-    # Normalize paths
-    filepath = filepath.replace("\\", "/").lstrip("/")
-    pattern = pattern.replace("\\", "/").lstrip("/")
-    
-    # Handle ** patterns
+    # Handle ** for recursive matching
     if "**" in pattern:
-        # Convert ** to a regex-like match
-        # For simplicity, use fnmatch with path parts
+        # Convert ** to match any path
         parts = pattern.split("**")
         if len(parts) == 2:
             prefix, suffix = parts
-            prefix = prefix.rstrip("/")
-            suffix = suffix.lstrip("/")
-            
-            # Check if filepath starts with prefix
-            if prefix and not filepath.startswith(prefix):
-                return False
-            
-            # Check if filepath ends with suffix pattern
-            if suffix:
-                # Extract the end part of filepath
-                if "/" in filepath:
-                    end_part = filepath[filepath.rfind("/") + 1:]
-                else:
-                    end_part = filepath
-                
-                return fnmatch.fnmatch(end_part, suffix) or fnmatch.fnmatch(filepath, "*" + suffix)
-            
-            return True
-    
-    # Simple fnmatch for non-** patterns
-    return fnmatch.fnmatch(filepath, pattern)
+            if filename.startswith(prefix):
+                remaining = filename[len(prefix):]
+                # Suffix should match the end
+                return remaining.endswith(suffix.rstrip("*")) or fnmatch.fnmatch(remaining, suffix)
+        return False
+
+    # Simple wildcard matching
+    return fnmatch.fnmatch(filename, pattern)
 
 
 def check_file_permission(
     role: str,
     filepath: str,
-    action: str,
-    file_exists: bool = True,
-) -> tuple[bool, Optional[str]]:
-    """Check if role can perform action on filepath.
-    
+    action: str = "create",
+) -> bool:
+    """Check if a role has permission to perform an action on a file.
+
     Args:
-        role: Role name (pm, analyst, architect, designer, developer, qa, reviewer, tech_writer)
-        filepath: File path to check
-        action: Action to perform (read, create, modify, delete)
-        file_exists: Whether the file already exists
-    
+        role: Role name (pm, analyst, architect, etc.)
+        filepath: File path relative to artifacts directory
+        action: Action to check (create, modify, read)
+
     Returns:
-        Tuple of (allowed: bool, reason: Optional[str])
+        True if permission granted, False otherwise
     """
-    # Normalize filepath
-    filepath = filepath.replace("\\", "/").lstrip("/")
-    
-    # Get permissions for role
-    perms = ROLE_FILE_PERMISSIONS.get(role.lower())
-    if not perms:
-        return False, f"Unknown role: {role}"
-    
-    # Read is always allowed (except for sensitive files)
+    if role not in ROLE_FILE_PERMISSIONS:
+        logger.warning(f"Unknown role: {role}")
+        return False
+
+    permissions = ROLE_FILE_PERMISSIONS[role]
+
+    # Normalize path
+    filepath = filepath.lstrip("/")
+
     if action == "read":
-        return True, None
-    
-    # Check read_only restriction first
-    if action in ("modify", "delete"):
-        for pattern in perms.get("read_only", []):
+        # All roles can read their read_only files
+        for pattern in permissions.get("read_only", []):
             if matches_pattern(filepath, pattern):
-                return False, f"Role '{role}' cannot modify '{filepath}' - it's read-only for this role"
-    
-    # For create action
-    if action == "create" or (action == "modify" and not file_exists):
-        for pattern in perms.get("can_create", []):
+                return True
+        # Also check if they can create/modify (implies read)
+        for pattern in permissions.get("can_create", []) + permissions.get("can_modify", []):
             if matches_pattern(filepath, pattern):
-                return True, None
-        return False, f"Role '{role}' cannot create '{filepath}'"
-    
-    # For modify action (file exists)
-    if action == "modify":
-        # Check can_modify first
-        for pattern in perms.get("can_modify", []):
-            if matches_pattern(filepath, pattern):
-                return True, None
-        
-        # Check can_create as fallback
-        for pattern in perms.get("can_create", []):
-            if matches_pattern(filepath, pattern):
-                return True, None
-        
-        return False, f"Role '{role}' cannot modify '{filepath}'"
-    
-    # For delete action
-    if action == "delete":
-        # Only allow delete if can_create
-        for pattern in perms.get("can_create", []):
-            if matches_pattern(filepath, pattern):
-                return True, None
-        return False, f"Role '{role}' cannot delete '{filepath}'"
-    
-    return False, f"Unknown action: {action}"
+                return True
+        return False
 
-
-def validate_artifact_path(role: str, filepath: str, action: str = "create") -> bool:
-    """Validate and log artifact path access.
-    
-    Args:
-        role: Role name
-        filepath: File path to validate
-        action: Action to perform
-    
-    Returns:
-        True if allowed, False otherwise
-    """
-    allowed, reason = check_file_permission(role, filepath, action)
-    
-    if not allowed:
-        logger.warning(f"Permission denied: {reason}")
+    if action == "create":
+        patterns = permissions.get("can_create", [])
+    elif action == "modify":
+        # Can modify if in can_modify OR can_create (new files can be created then modified)
+        patterns = permissions.get("can_modify", []) + permissions.get("can_create", [])
     else:
-        logger.debug(f"Permission granted: {role} can {action} {filepath}")
-    
-    return allowed
+        logger.warning(f"Unknown action: {action}")
+        return False
+
+    for pattern in patterns:
+        if matches_pattern(filepath, pattern):
+            logger.debug(f"Permission granted: {role} can {action} {filepath}")
+            return True
+
+    logger.warning(f"Permission denied: {role} cannot {action} {filepath}")
+    return False
 
 
-def get_role_for_crew(crew_name: str) -> str:
-    """Get the primary role for a crew.
-    
+# Current role context (thread-local storage)
+import threading
+
+_current_role = threading.local()
+
+
+def set_current_role(role: str) -> None:
+    """Set the current role for permission checks.
+
     Args:
-        crew_name: Crew name (e.g., 'pm_crew', 'analyst_crew')
-    
-    Returns:
-        Role name
+        role: Role name to set
     """
-    CREW_ROLE_MAP = {
-        "pm_crew": "pm",
-        "analyst_crew": "analyst",
-        "architect_crew": "architect",
-        "designer_crew": "designer",
-        "dev_crew": "developer",
-        "qa_crew": "qa",
-        "reviewer_crew": "reviewer",
-        "tech_writer_crew": "tech_writer",
-    }
-    
-    return CREW_ROLE_MAP.get(crew_name, crew_name.replace("_crew", ""))
+    _current_role.value = role
+    logger.debug(f"Current role set to: {role}")
+
+
+def get_current_role() -> Optional[str]:
+    """Get the current role for permission checks.
+
+    Returns:
+        Current role name or None if not set
+    """
+    return getattr(_current_role, "value", None)
+
+
+def check_current_role_permission(filepath: str, action: str = "create") -> bool:
+    """Check permission using the current role context.
+
+    Args:
+        filepath: File path to check
+        action: Action to check
+
+    Returns:
+        True if permission granted, False otherwise
+    """
+    role = get_current_role()
+    if not role:
+        logger.warning("No role context set, denying permission")
+        return False
+    return check_file_permission(role, filepath, action)
