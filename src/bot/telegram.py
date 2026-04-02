@@ -95,10 +95,10 @@ class TelegramBot:
             "/new — создать новую задачу\n"
             "/status — статус проекта\n"
             "/issues — список задач\n"
-            "/run <issue> — запустить задачу\n"
+            "/run &lt;issue&gt; — запустить задачу\n"
             "/checkpoint — статусы checkpoint'ов\n"
             "/approve — одобрить checkpoint\n"
-            "/reject <причина> — отклонить checkpoint\n"
+            "/reject &lt;причина&gt; — отклонить checkpoint\n"
             "/cancel — отменить диалог\n"
             "/help — полная справка",
             parse_mode="HTML"
@@ -181,7 +181,7 @@ class TelegramBot:
             message += f"#{issue['number']} — {issue['title']}\n"
             if labels:
                 message += f"   🏷️ {labels}\n"
-        message += f"\n💡 <code>/run <номер></code> чтобы запустить"
+        message += f"\n💡 <code>/run &lt;номер&gt;</code> чтобы запустить"
         await update.message.reply_text(message, parse_mode="HTML")
 
     async def run_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -193,7 +193,7 @@ class TelegramBot:
             return
 
         if not context.args:
-            await update.message.reply_text("❌ Укажи номер задачи: <code>/run <номер></code>", parse_mode="HTML")
+            await update.message.reply_text("❌ Укажи номер задачи: <code>/run &lt;номер&gt;</code>", parse_mode="HTML")
             return
 
         try:
@@ -271,7 +271,7 @@ class TelegramBot:
                                 text=f"🛑 <b>Checkpoint: {checkpoint.value}</b>\n\n"
                                      f"Артефакты для проверки:\n{artifact_list}\n\n"
                                      f"✅ <code>/approve</code> — одобрить\n"
-                                     f"❌ <code>/reject <причина></code> — отклонить",
+                                     f"❌ <code>/reject &lt;причина&gt;</code> — отклонить",
                                 parse_mode="HTML"
                             )
                         except Exception as e:
@@ -355,13 +355,13 @@ class TelegramBot:
             "<b>Управление задачами:</b>\n"
             "/new — Создать новую задачу\n"
             "/issues — Открытые задачи\n"
-            "/run <номер> — Запустить задачу\n\n"
+            "/run &lt;номер&gt; — Запустить задачу\n\n"
             "<b>Мониторинг:</b>\n"
             "/status — Статус проекта\n"
             "/checkpoint — Checkpoint'ы\n\n"
             "<b>Управление:</b>\n"
             "/approve — Одобрить checkpoint\n"
-            "/reject <причина> — Отклонить\n"
+            "/reject &lt;причина&gt; — Отклонить\n"
             "/cancel — Отменить диалог\n\n"
             "<b>Репозиторий:</b>\n"
             f"github.com/{settings.github_repo}"
@@ -390,7 +390,7 @@ class TelegramBot:
             if cp_data.get("artifact_url"):
                 message += f"   📎 {cp_data['artifact_url']}\n"
         
-        message += "\n💡 <code>/approve</code> или <code>/reject <причина></code>"
+        message += "\n💡 <code>/approve</code> или <code>/reject &lt;причина&gt;</code>"
         await update.message.reply_text(message, parse_mode="HTML")
 
     async def approve_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -429,7 +429,7 @@ class TelegramBot:
             return
 
         if not context.args:
-            await update.message.reply_text("❌ Укажи причину: <code>/reject <причина></code>", parse_mode="HTML")
+            await update.message.reply_text("❌ Укажи причину: <code>/reject &lt;причина&gt;</code>", parse_mode="HTML")
             return
 
         reason = " ".join(context.args)
