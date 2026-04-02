@@ -91,7 +91,7 @@ class TelegramBot:
         await update.message.reply_text(
             f"👋 Привет, {user.first_name if user else 'founder'}!\n\n"
             "Я Solo Founder Agents Bot — управляю командой AI-агентов.\n\n"
-            "📋 **Команды:**\n"
+            "📋 <b>Команды:</b>\n"
             "/new — создать новую задачу\n"
             "/status — статус проекта\n"
             "/issues — список задач\n"
@@ -101,7 +101,7 @@ class TelegramBot:
             "/reject <причина> — отклонить checkpoint\n"
             "/cancel — отменить диалог\n"
             "/help — полная справка",
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
     async def new_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -119,13 +119,13 @@ class TelegramBot:
         state["requirements_data"] = {}
 
         await update.message.reply_text(
-            "🚀 **Создание новой задачи**\n\n"
+            "🚀 <b>Создание новой задачи</b>\n\n"
             "Расскажи что хочешь создать. Я задам уточняющие вопросы и создам PRD.\n\n"
-            "📝 **Опиши свою идею:**\n"
+            "📝 <b>Опиши свою идею:</b>\n"
             "- Что за продукт/фича?\n"
             "- Для кого?\n"
             "- Какую проблему решает?",
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -155,12 +155,12 @@ class TelegramBot:
         stage_display = stage_names.get(stage, stage)
 
         message = (
-            f"📊 **Статус проекта**\n\n"
+            f"📊 <b>Статус проекта</b>\n\n"
             f"📍 Фаза: {stage_display}\n"
-            f"📂 Репозиторий: `{settings.github_repo}`\n\n"
+            f"📂 Репозиторий: <code>{settings.github_repo}</code>\n\n"
             f"Используй /issues чтобы посмотреть задачи"
         )
-        await update.message.reply_text(message, parse_mode="Markdown")
+        await update.message.reply_text(message, parse_mode="HTML")
 
     async def issues_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -175,14 +175,14 @@ class TelegramBot:
             await update.message.reply_text("📭 Нет открытых задач\n\nИспользуй /new чтобы создать новую")
             return
 
-        message = "📋 **Открытые задачи:**\n\n"
+        message = "📋 <b>Открытые задачи:</b>\n\n"
         for issue in issues[:10]:
-            labels = ", ".join([f"`{l}`" for l in issue.get("labels", [])]) if issue.get("labels") else ""
+            labels = ", ".join([f"<code>{l}</code>" for l in issue.get("labels", [])]) if issue.get("labels") else ""
             message += f"#{issue['number']} — {issue['title']}\n"
             if labels:
                 message += f"   🏷️ {labels}\n"
-        message += f"\n💡 `/run <номер>` чтобы запустить"
-        await update.message.reply_text(message, parse_mode="Markdown")
+        message += f"\n💡 <code>/run <номер></code> чтобы запустить"
+        await update.message.reply_text(message, parse_mode="HTML")
 
     async def run_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -193,7 +193,7 @@ class TelegramBot:
             return
 
         if not context.args:
-            await update.message.reply_text("❌ Укажи номер задачи: `/run <номер>`", parse_mode="Markdown")
+            await update.message.reply_text("❌ Укажи номер задачи: <code>/run <номер></code>", parse_mode="HTML")
             return
 
         try:
@@ -209,14 +209,14 @@ class TelegramBot:
             return
 
         await update.message.reply_text(
-            f"🚀 **Запускаю задачу #{issue_number}**\n\n"
+            f"🚀 <b>Запускаю задачу #{issue_number}</b>\n\n"
             f"Агенты приступают к работе:\n"
             f"→ PM анализирует требования\n"
             f"→ Architect проектирует\n"
             f"→ Developer реализует\n"
             f"→ QA тестирует\n\n"
             f"Я уведомлю тебя о checkpoint'ах",
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         state_manager.set_task_status(issue_key, "in_progress")
 
@@ -246,8 +246,8 @@ class TelegramBot:
                         try:
                             await self.app.bot.send_message(
                                 chat_id=chat_id,
-                                text=f"📊 **{phase.title()}**: {message}",
-                                parse_mode="Markdown"
+                                text=f"📊 <b>{phase.title()}</b>: {message}",
+                                parse_mode="HTML"
                             )
                         except Exception as e:
                             logger.error(f"Failed to send progress: {e}")
@@ -268,11 +268,11 @@ class TelegramBot:
                         try:
                             await self.app.bot.send_message(
                                 chat_id=chat_id,
-                                text=f"🛑 **Checkpoint: {checkpoint.value}**\n\n"
+                                text=f"🛑 <b>Checkpoint: {checkpoint.value}</b>\n\n"
                                      f"Артефакты для проверки:\n{artifact_list}\n\n"
-                                     f"✅ `/approve` — одобрить\n"
-                                     f"❌ `/reject <причина>` — отклонить",
-                                parse_mode="Markdown"
+                                     f"✅ <code>/approve</code> — одобрить\n"
+                                     f"❌ <code>/reject <причина></code> — отклонить",
+                                parse_mode="HTML"
                             )
                         except Exception as e:
                             logger.error(f"Failed to send checkpoint: {e}")
@@ -291,19 +291,19 @@ class TelegramBot:
                 async def send_result():
                     if result.get("status") == "complete":
                         pr_urls = result.get("phases", {}).get("implementation", {}).get("pr_url")
-                        msg = f"✅ **Задача #{issue_number} завершена!**\n\n"
+                        msg = f"✅ <b>Задача #{issue_number} завершена!</b>\n\n"
                         if pr_urls:
                             msg += f"📎 PR: {pr_urls}\n\n"
                         msg += "Все фазы выполнены успешно."
                     else:
                         error = result.get("error", "Unknown error")
-                        msg = f"❌ **Ошибка выполнения задачи #{issue_number}**\n\n{error}"
+                        msg = f"❌ <b>Ошибка выполнения задачи #{issue_number}</b>\n\n{error}"
                     
                     try:
                         await self.app.bot.send_message(
                             chat_id=chat_id,
                             text=msg,
-                            parse_mode="Markdown"
+                            parse_mode="HTML"
                         )
                     except Exception as e:
                         logger.error(f"Failed to send result: {e}")
@@ -351,22 +351,22 @@ class TelegramBot:
             return
 
         message = (
-            "📖 **Справка Solo Founder Agents**\n\n"
-            "**Управление задачами:**\n"
+            "📖 <b>Справка Solo Founder Agents</b>\n\n"
+            "<b>Управление задачами:</b>\n"
             "/new — Создать новую задачу\n"
             "/issues — Открытые задачи\n"
             "/run <номер> — Запустить задачу\n\n"
-            "**Мониторинг:**\n"
+            "<b>Мониторинг:</b>\n"
             "/status — Статус проекта\n"
             "/checkpoint — Checkpoint'ы\n\n"
-            "**Управление:**\n"
+            "<b>Управление:</b>\n"
             "/approve — Одобрить checkpoint\n"
             "/reject <причина> — Отклонить\n"
             "/cancel — Отменить диалог\n\n"
-            "**Репозиторий:**\n"
+            "<b>Репозиторий:</b>\n"
             f"github.com/{settings.github_repo}"
         )
-        await update.message.reply_text(message, parse_mode="Markdown")
+        await update.message.reply_text(message, parse_mode="HTML")
 
     async def checkpoint_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -381,17 +381,17 @@ class TelegramBot:
             await update.message.reply_text("📭 Нет checkpoint'ов для проверки")
             return
 
-        message = "🛑 **Checkpoint'ы:**\n\n"
+        message = "🛑 <b>Checkpoint'ы:</b>\n\n"
         status_emoji = {"pending_review": "⏳", "approved": "✅", "rejected": "❌"}
         
         for cp_id, cp_data in checkpoints.items():
             emoji = status_emoji.get(cp_data.get("status"), "❓")
-            message += f"{emoji} **{cp_id}**: `{cp_data.get('status')}`\n"
+            message += f"{emoji} <b>{cp_id}</b>: <code>{cp_data.get('status')}</code>\n"
             if cp_data.get("artifact_url"):
                 message += f"   📎 {cp_data['artifact_url']}\n"
         
-        message += "\n💡 `/approve` или `/reject <причина>`"
-        await update.message.reply_text(message, parse_mode="Markdown")
+        message += "\n💡 <code>/approve</code> или <code>/reject <причина></code>"
+        await update.message.reply_text(message, parse_mode="HTML")
 
     async def approve_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -429,7 +429,7 @@ class TelegramBot:
             return
 
         if not context.args:
-            await update.message.reply_text("❌ Укажи причину: `/reject <причина>`", parse_mode="Markdown")
+            await update.message.reply_text("❌ Укажи причину: <code>/reject <причина></code>", parse_mode="HTML")
             return
 
         reason = " ".join(context.args)
@@ -493,8 +493,9 @@ class TelegramBot:
         if "initial_description" not in reqs:
             reqs["initial_description"] = text
             await update.message.reply_text(
-                "📝 **Отлично! Теперь уточни детали:**\n\n"
-                "1️⃣ Кто целевая аудитория продукта?"
+                "📝 <b>Отлично! Теперь уточни детали:</b>\n\n"
+                "1️⃣ Кто целевая аудитория продукта?",
+                parse_mode="HTML"
             )
             return
         
@@ -556,10 +557,10 @@ class TelegramBot:
 
 ## 1. Обзор
 
-**Описание:** {reqs.get('initial_description', 'N/A')}
+<b>Описание:</b> {reqs.get('initial_description', 'N/A')}
 
-**Статус:** Draft
-**Дата:** {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}
+<b>Статус:</b> Draft
+<b>Дата:</b> {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}
 
 ## 2. Целевая аудитория
 
@@ -599,21 +600,21 @@ class TelegramBot:
                 name="PRD"
             )
             await update.message.reply_text(
-                f"📄 **PRD создан и сохранён!**\n\n"
+                f"📄 <b>PRD создан и сохранён!</b>\n\n"
                 f"{save_result}\n\n"
-                f"✅ `/confirm` — подтвердить и создать Issue\n"
-                f"❌ `/cancel` — отменить",
-                parse_mode="Markdown"
+                f"✅ <code>/confirm</code> — подтвердить и создать Issue\n"
+                f"❌ <code>/cancel</code> — отменить",
+                parse_mode="HTML"
             )
         except Exception as e:
             # Fallback: show truncated preview
             logger.warning(f"Failed to pre-save PRD: {e}")
             await update.message.reply_text(
-                f"📄 **PRD создан!** (превью)\n\n"
+                f"📄 <b>PRD создан!</b> (превью)\n\n"
                 f"{prd_content[:500]}...\n\n"
-                f"✅ `/confirm` — сохранить полностью\n"
-                f"❌ `/cancel` — отменить",
-                parse_mode="Markdown"
+                f"✅ <code>/confirm</code> — сохранить полностью\n"
+                f"❌ <code>/cancel</code> — отменить",
+                parse_mode="HTML"
             )
 
     async def confirm_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -647,11 +648,11 @@ class TelegramBot:
             state["prd_draft"] = None
 
             await update.message.reply_text(
-                f"✅ **PRD подтверждён!**\n\n"
+                f"✅ <b>PRD подтверждён!</b>\n\n"
                 f"📋 Issue #{issue.get('number', 'N/A')} создан\n"
                 f"📄 [docs/requirements/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/requirements/prd.md)\n\n"
                 f"Используй /run {issue.get('number', '')} чтобы запустить разработку",
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
         except Exception as e:
             logger.error(f"Failed to save PRD: {e}")
@@ -666,8 +667,9 @@ class TelegramBot:
         else:
             await update.message.reply_text(
                 "⚠️ Не понял ответ.\n\n"
-                "✅ `/confirm` — сохранить PRD\n"
-                "❌ `/cancel` — отменить"
+                "✅ <code>/confirm</code> — сохранить PRD\n"
+                "❌ <code>/cancel</code> — отменить",
+                parse_mode="HTML"
             )
 
     def setup_handlers(self) -> None:
