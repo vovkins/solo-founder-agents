@@ -81,10 +81,17 @@ def create_core_crew(
 
 
 def run_core_crew(founder_vision: str) -> dict:
-    """Run the core crew (PM + Analyst + Architect) and return results."""
+    """Run the core crew (DEPRECATED — use individual crews instead).
+
+    This function is kept for backward compatibility only.
+    Use run_pm_crew(), run_analyst_crew(), run_architect_crew() instead.
+    """
+    import warnings
+    warnings.warn("core_crew is deprecated. Use individual crews for proper role isolation.")
+
     from src.tools.file_permissions import set_current_role
-    set_current_role("core_crew")  # Combined PM + Analyst + Architect permissions
-    
+    set_current_role("pm")  # Best effort — PM goes first
+
     crew = create_core_crew(founder_vision)
     result = crew.kickoff()
 

@@ -167,41 +167,6 @@ ROLE_FILE_PERMISSIONS: Dict[str, Dict[str, List[str]]] = {
             "src/**",
         ],
     },
-    # Special role for core_crew which runs PM + Analyst + Architect together
-    "core_crew": {
-        "can_create": [
-            # PM permissions
-            "docs/requirements/prd.md",
-            "docs/requirements/backlog.md",
-            "docs/requirements/personas.md",
-            # Analyst permissions
-            "docs/requirements/task-specs.md",
-            "docs/requirements/dep-map.md",
-            "docs/requirements/feature-*.md",
-            # Architect permissions
-            "docs/design/system-design.md",
-            "docs/design/standards.md",
-            "docs/adr/*.md",
-        ],
-        "can_modify": [
-            # PM
-            "docs/requirements/prd.md",
-            "docs/requirements/backlog.md",
-            "docs/requirements/personas.md",
-            # Analyst
-            "docs/requirements/task-specs.md",
-            "docs/requirements/dep-map.md",
-            "docs/requirements/feature-*.md",
-            # Architect
-            "docs/design/system-design.md",
-            "docs/design/standards.md",
-            "docs/adr/*.md",
-        ],
-        "read_only": [
-            "docs/tests/**",
-            "src/**",
-        ],
-    },
 }
 
 
