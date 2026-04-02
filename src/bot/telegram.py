@@ -231,7 +231,7 @@ class TelegramBot:
             founder_vision = "Implement the feature described in docs/prd.md"
             try:
                 from src.tools.github_tools import read_file_from_repo
-                prd_content = read_file_from_repo("docs/prd.md", "main")
+                prd_content = read_file_from_repo("docs/requirements/prd.md", "main")
                 if prd_content:
                     founder_vision = prd_content[:2000]  # Limit size
             except Exception as e:

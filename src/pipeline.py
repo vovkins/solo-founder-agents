@@ -299,7 +299,7 @@ class Pipeline:
 
             # Checkpoint 1: PRD
             if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/prd.md"])
+                on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/requirements/prd.md"])
 
             # Phase 2: Design
             if on_progress:
@@ -310,7 +310,7 @@ class Pipeline:
 
             # Checkpoint 2: System Design
             if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/system-design.md"])
+                on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/design/system-design.md"])
 
             # Phase 3: Implementation
             if on_progress:

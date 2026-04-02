@@ -60,14 +60,14 @@ class ArtifactManager:
         # Save artifact
         artifact = Artifact(
             type=ArtifactType.PRD,
-            path="docs/prd.md",
+            path="docs/requirements/prd.md",
             content="# PRD Content...",
             metadata={"version": "1.0"}
         )
         url = manager.save_artifact(artifact)
 
         # Read artifact
-        content = manager.read_artifact("docs/prd.md")
+        content = manager.read_artifact("docs/requirements/prd.md")
 
         # List artifacts
         artifacts = manager.list_artifacts(ArtifactType.DESIGN_SYSTEM)
@@ -255,17 +255,17 @@ class ArtifactManager:
         timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
 
         if artifact_type == ArtifactType.PRD:
-            path = "docs/prd.md"
+            path = "docs/requirements/prd.md"
         elif artifact_type == ArtifactType.SYSTEM_DESIGN:
-            path = "docs/system-design.md"
+            path = "docs/design/system-design.md"
         elif artifact_type == ArtifactType.ADR:
             path = f"docs/adr/{name or timestamp}.md"
         elif artifact_type == ArtifactType.DESIGN_SYSTEM:
-            path = "docs/design-system.md"
+            path = "docs/design/design-system.md"
         elif artifact_type == ArtifactType.UI_SCREEN:
-            path = f"docs/ui/screens/{name or timestamp}.md"
+            path = f"docs/design/ui/screens/{name or timestamp}.md"
         elif artifact_type == ArtifactType.USER_FLOW:
-            path = f"docs/user-flows/{name or timestamp}.md"
+            path = f"docs/design/ui/flows/{name or timestamp}.md"
         elif artifact_type == ArtifactType.TEST_CASE:
             path = f"docs/tests/{name or timestamp}-test-case.md"
         elif artifact_type == ArtifactType.TEST_RUN_LOG:

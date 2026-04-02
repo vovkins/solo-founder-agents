@@ -87,22 +87,28 @@ class SaveArtifactTool(BaseTool):
 
         artifact_type_enum = type_map[artifact_type]
 
-        # Determine file path for permission check (same logic as artifact_manager)
+        # Determine file path based on agreed directory structure:
+        # artifacts/
+        #   requirements/  → PRD, backlog, personas
+        #   design/        → system-design, design-system, ui/
+        #   adr/           → Architecture Decision Records
+        #   implementation/ → PRs, branches, commits
+        #   tests/         → Unit, integration
         from datetime import datetime
         timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
         
         if artifact_type_enum == ArtifactType.PRD:
-            filepath = "docs/prd.md"
+            filepath = "docs/requirements/prd.md"
         elif artifact_type_enum == ArtifactType.SYSTEM_DESIGN:
-            filepath = "docs/system-design.md"
+            filepath = "docs/design/system-design.md"
         elif artifact_type_enum == ArtifactType.ADR:
             filepath = f"docs/adr/{name or timestamp}.md"
         elif artifact_type_enum == ArtifactType.DESIGN_SYSTEM:
-            filepath = "docs/design-system.md"
+            filepath = "docs/design/design-system.md"
         elif artifact_type_enum == ArtifactType.UI_SCREEN:
-            filepath = f"docs/ui/screens/{name or timestamp}.md"
+            filepath = f"docs/design/ui/screens/{name or timestamp}.md"
         elif artifact_type_enum == ArtifactType.USER_FLOW:
-            filepath = f"docs/user-flows/{name or timestamp}.md"
+            filepath = f"docs/design/ui/flows/{name or timestamp}.md"
         elif artifact_type_enum == ArtifactType.TEST_CASE:
             filepath = f"docs/tests/{name or timestamp}-test-case.md"
         elif artifact_type_enum == ArtifactType.TEST_RUN_LOG:
@@ -141,7 +147,7 @@ class ReadArtifactTool(BaseTool):
     from the GitHub repository.
 
     Example:
-        read_artifact("docs/prd.md")
+        read_artifact("docs/requirements/prd.md")
     """
 
     name: str = "read_artifact"
