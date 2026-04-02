@@ -228,7 +228,7 @@ class TelegramBot:
             import asyncio
             
             # Get PRD content as founder_vision
-            founder_vision = "Implement the feature described in docs/prd.md"
+            founder_vision = "Implement the feature described in docs/requirements/prd.md"
             try:
                 from src.tools.github_tools import read_file_from_repo
                 prd_content = read_file_from_repo("docs/requirements/prd.md", "main")
@@ -520,6 +520,26 @@ class TelegramBot:
         # Step 3: Constraints (optional)
         if "constraints" not in reqs:
             reqs["constraints"] = text if text.lower() not in ["нет", "no", "н нету", "-"] else "Нет особых ограничений"
+            await update.message.reply_text(
+                "✅ Записал ограничения.\n\n"
+                "4️⃣ Какой технический стек использовать?\n"
+                "(Например: React Native + Node.js + Tailwind CSS. Напиши 'по умолчанию' если без предпочтений)"
+            )
+            return
+        
+        # Step 4: Tech stack
+        if "tech_stack" not in reqs:
+            reqs["tech_stack"] = text if text.lower() not in ["по умолчанию", "default", "без предпочтений", "нет"] else None
+            await update.message.reply_text(
+                "✅ Записал стек.\n\n"
+                "5️⃣ Какие критерии успеха для MVP?\n"
+                "(Например: Работает на iOS и Android, базовые CRUD операции. Напиши 'по умолчанию' если без предпочтений)"
+            )
+            return
+        
+        # Step 5: Success criteria
+        if "success_criteria" not in reqs:
+            reqs["success_criteria"] = text if text.lower() not in ["по умолчанию", "default", "без предпочтений", "нет"] else None
             # All data collected - generate PRD
             await self._generate_prd(user_id, update)
 
@@ -529,6 +549,9 @@ class TelegramBot:
         reqs = state["requirements_data"]
         
         # Build PRD content from step-by-step collected data
+        tech_stack = reqs.get('tech_stack') or "- Frontend: React Native\n- Backend: Node.js\n- Styling: Tailwind CSS\n- UI Kit: shadcn/ui"
+        success_criteria = reqs.get('success_criteria') or "- MVP готов к тестированию\n- Основные фичи работают\n- Код протестирован"
+        
         prd_content = f"""# Product Requirements Document
 
 ## 1. Обзор
@@ -552,16 +575,11 @@ class TelegramBot:
 
 ## 5. Технический стек
 
-- Frontend: React Native
-- Backend: Node.js
-- Styling: Tailwind CSS
-- UI Kit: shadcn/ui
+{tech_stack}
 
 ## 6. Успешные критерии
 
-- MVP готов к тестированию
-- Основные фичи работают
-- Код протестирован
+{success_criteria}
 
 ---
 *Сгенерировано PM Agent*
@@ -619,7 +637,7 @@ class TelegramBot:
             prd_preview = state["prd_draft"][:1500]
             issue = create_github_issue(
                 title="New Feature Request (from PRD)",
-                body=f"Created from PRD dialog.\n\nSee [docs/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/prd.md) for full PRD.\n\n---\n\n{prd_preview}",
+                body=f"Created from PRD dialog.\n\nSee [docs/requirements/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/requirements/prd.md) for full PRD.\n\n---\n\n{prd_preview}",
                 labels=["feature"]
             )
             
@@ -631,7 +649,7 @@ class TelegramBot:
             await update.message.reply_text(
                 f"✅ **PRD подтверждён!**\n\n"
                 f"📋 Issue #{issue.get('number', 'N/A')} создан\n"
-                f"📄 [docs/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/prd.md)\n\n"
+                f"📄 [docs/requirements/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/requirements/prd.md)\n\n"
                 f"Используй /run {issue.get('number', '')} чтобы запустить разработку",
                 parse_mode="Markdown"
             )
