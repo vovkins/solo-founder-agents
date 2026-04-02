@@ -572,6 +572,8 @@ class TelegramBot:
 
         # Save to GitHub immediately for preview
         try:
+            from src.tools.artifact_tools import set_current_role as set_tool_role
+            set_tool_role("pm")  # PRD is owned by PM role
             save_tool = SaveArtifactTool()
             save_result = save_tool._run(
                 artifact_type="prd",
