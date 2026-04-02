@@ -1,4 +1,21 @@
-"""QA Engineer agent for testing and quality assurance."""
+"""QA Engineer agent for testing and quality assurance.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the QA role. You can ONLY create and edit these files:
+  - docs/tests/*-test-case.md
+  - docs/tests/*-run-log.md
+  - docs/tests/qa-signoff-*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+  - src/** (owned by Developer)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
+"""
 
 from crewai import Agent
 

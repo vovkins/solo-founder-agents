@@ -175,7 +175,6 @@ def create_system_design_task(
         """,
         expected_output="Path to the created System Design document",
         agent=architect_agent,
-        output_file="data/artifacts/docs/system-design.md",
     )
 
 
@@ -227,7 +226,6 @@ def create_standards_task(architecture: str) -> Task:
         """,
         expected_output="Path to the created standards document",
         agent=architect_agent,
-        output_file="data/artifacts/docs/standards.md",
     )
 
 

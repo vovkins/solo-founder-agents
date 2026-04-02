@@ -71,7 +71,6 @@ def create_design_system_task(system_design_path: str) -> Task:
         """,
         expected_output="Path to the created design system document",
         agent=designer_agent,
-        output_file="data/artifacts/docs/design-system.md",
     )
 
 

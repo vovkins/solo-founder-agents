@@ -1,4 +1,13 @@
-"""Developer (Reviewer) agent for code review."""
+"""Developer (Reviewer) agent for code review.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the Reviewer role. You can ONLY READ files. You cannot create or edit any files.
+  - docs/** (read only)
+  - src/** (read only)
+
+Your job is to review code and provide feedback, not to modify files.
+"""
 
 from crewai import Agent
 

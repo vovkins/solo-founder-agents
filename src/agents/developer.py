@@ -1,4 +1,21 @@
-"""Developer (Coder) agent for implementing features and writing code."""
+"""Developer (Coder) agent for implementing features and writing code.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the Developer role. You can ONLY create and edit these files:
+  - docs/implementation/pull-request-*.md
+  - docs/implementation/branch-*.md
+  - docs/tests/*-test-case.md
+  - src/** (source code)
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
+"""
 
 from crewai import Agent
 

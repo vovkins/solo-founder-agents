@@ -1,4 +1,21 @@
-"""Software Architect agent for system design and ADRs."""
+"""Software Architect agent for system design and ADRs.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the Architect role. You can ONLY create and edit these files:
+  - docs/design/system-design.md
+  - docs/design/standards.md
+  - docs/adr/*.md (Architecture Decision Records)
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/design-system.md (owned by Designer)
+  - docs/design/ui/** (owned by Designer)
+  - docs/tests/** (owned by QA)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
+"""
 
 from crewai import Agent
 

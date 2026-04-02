@@ -102,14 +102,33 @@ class ArtifactManager:
     ) -> str:
         """Save artifact to local storage and optionally to GitHub.
 
+        Centralized save point with permission check (Level 3 protection).
+
         Args:
             artifact: Artifact to save
             commit_message: Custom commit message (optional)
 
         Returns:
             URL to the artifact in GitHub or local path
+
+        Raises:
+            PermissionError: If current role cannot write to this path
         """
-        # Save locally first
+        # === PERMISSION CHECK (Level 3: Hard block) ===
+        from .file_permissions import get_current_role, check_current_role_permission
+        role = get_current_role()
+        if role:
+            if not check_current_role_permission(artifact.path, "create"):
+                logger.error(
+                    f"BLOCKED: Role '{role}' tried to write to '{artifact.path}' — "
+                    f"permission denied. File NOT saved."
+                )
+                raise PermissionError(
+                    f"Role '{role}' cannot write to '{artifact.path}'. "
+                    f"Check your permissions with list_my_files tool."
+                )
+
+        # Save locally
         local_path = self.local_dir / artifact.path
         local_path.parent.mkdir(parents=True, exist_ok=True)
         local_path.write_text(artifact.content, encoding="utf-8")

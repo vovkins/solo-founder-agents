@@ -62,7 +62,6 @@ def create_prd_task(requirements: str) -> Task:
         """,
         expected_output="Path to the created PRD document (docs/prd.md)",
         agent=pm_agent,
-        output_file="data/artifacts/docs/prd.md",
     )
 
 

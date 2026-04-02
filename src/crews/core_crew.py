@@ -81,14 +81,10 @@ def create_core_crew(
 
 
 def run_core_crew(founder_vision: str) -> dict:
-    """Run the core crew and return results.
-
-    Args:
-        founder_vision: Initial product vision from founder
-
-    Returns:
-        Dictionary with results and outputs
-    """
+    """Run the core crew (PM + Analyst + Architect) and return results."""
+    from src.tools.file_permissions import set_current_role
+    set_current_role("core_crew")  # Combined PM + Analyst + Architect permissions
+    
     crew = create_core_crew(founder_vision)
     result = crew.kickoff()
 

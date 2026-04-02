@@ -1,4 +1,22 @@
-"""Business Analyst agent for decomposing features into tasks."""
+"""Business Analyst agent for decomposing features into tasks.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the Analyst role. You can ONLY create and edit these files:
+  - docs/requirements/task-specs.md
+  - docs/requirements/dep-map.md
+  - docs/requirements/feature-*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/prd.md (owned by PM)
+  - docs/requirements/backlog.md (owned by PM)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+  - docs/tests/** (owned by QA)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
+"""
 
 from crewai import Agent
 

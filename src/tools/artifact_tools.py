@@ -7,7 +7,13 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from .artifact_manager import ArtifactManager, ArtifactType, get_artifact_manager
-from .file_permissions import check_file_permission
+from .file_permissions import (
+    check_file_permission,
+    get_current_role,
+    set_current_role,
+    get_role_file_info,
+    format_permissions_for_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -116,22 +122,17 @@ class SaveArtifactTool(BaseTool):
         else:
             filepath = f"docs/{name or timestamp}.md"
 
-        # Check permissions
-        role = get_current_role()
-        if role:
-            allowed = check_file_permission(role, filepath, "create")
-            if not allowed:
-                logger.warning(f"Permission denied for {role} on {filepath}")
-                return f"⚠️ Permission denied for {role} on {filepath}\n\nPlease create files only in your designated directories."
-
-        # Save artifact
+        # Save artifact (permission check is now in artifact_manager.save_artifact)
         artifact = self.artifact_manager.create_artifact(
             artifact_type=artifact_type_enum,
             content=content,
             name=name,
         )
-        url = self.artifact_manager.save_artifact(artifact)
-        return f"✅ Artifact saved to: {url}"
+        try:
+            url = self.artifact_manager.save_artifact(artifact)
+            return f"✅ Artifact saved to: {url}"
+        except PermissionError as e:
+            return f"⛔ {e}"
 
 
 class ReadArtifactInput(BaseModel):
@@ -208,6 +209,49 @@ ARTIFACT_TOOLS = [
 ]
 
 
+class ListMyFilesInput(BaseModel):
+    """Input schema for ListMyFilesTool."""
+    pass
+
+
+class ListMyFilesTool(BaseTool):
+    """Show which files the current agent can create/modify.
+
+    Use this tool to check your file permissions before saving artifacts.
+    """
+
+    name: str = "list_my_files"
+    description: str = "Show which files you can create and modify. Always use this if unsure about permissions."
+    args_schema: Type[BaseModel] = ListMyFilesInput
+
+    def _run(self) -> str:
+        """Return file permissions for the current role.
+
+        Returns:
+            Human-readable list of allowed files
+        """
+        role = get_current_role()
+        if not role:
+            return "⚠️ No role set. Call set_current_role() first."
+
+        perms = get_role_file_info(role)
+        lines = [f"📋 Your permissions as '{role}':\n"]
+
+        if perms["can_create"]:
+            lines.append("✅ You CAN create/edit:")
+            for path in perms["can_create"]:
+                lines.append(f"   • {path}")
+        else:
+            lines.append("❌ You cannot create or edit any files.")
+
+        if perms.get("read_only"):
+            lines.append("\n📖 You can READ (but NOT modify):")
+            for path in perms["read_only"]:
+                lines.append(f"   • {path}")
+
+        return "\n".join(lines)
+
+
 def get_artifact_tools() -> list:
     """Get all artifact tools for use in agents."""
-    return ARTIFACT_TOOLS
+    return [SaveArtifactTool(), ReadArtifactTool(), SyncArtifactsTool(), ListMyFilesTool()]

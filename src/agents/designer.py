@@ -1,4 +1,22 @@
-"""UI/UX Designer agent for creating design system and UI specifications."""
+"""UI/UX Designer agent for creating design system and UI specifications.
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You are the Designer role. You can ONLY create and edit these files:
+  - docs/design/design-system.md
+  - docs/design/ui/screens/*.md
+  - docs/design/ui/flows/*.md
+  - docs/design/ui/components/*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/system-design.md (owned by Architect)
+  - docs/design/standards.md (owned by Architect)
+  - docs/adr/** (owned by Architect)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
+"""
 
 from crewai import Agent
 
