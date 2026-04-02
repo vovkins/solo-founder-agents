@@ -157,7 +157,7 @@ class TelegramBot:
         message = (
             f"📊 **Статус проекта**\n\n"
             f"📍 Фаза: {stage_display}\n"
-            f"📂 Репозиторий: `vovkins/agents-react-native-experiment`\n\n"
+            f"📂 Репозиторий: `{settings.github_repo}`\n\n"
             f"Используй /issues чтобы посмотреть задачи"
         )
         await update.message.reply_text(message, parse_mode="Markdown")
@@ -364,7 +364,7 @@ class TelegramBot:
             "/reject <причина> — Отклонить\n"
             "/cancel — Отменить диалог\n\n"
             "**Репозиторий:**\n"
-            "github.com/vovkins/agents-react-native-experiment"
+            f"github.com/{settings.github_repo}"
         )
         await update.message.reply_text(message, parse_mode="Markdown")
 
@@ -570,16 +570,34 @@ class TelegramBot:
         state["prd_draft"] = prd_content
         state["dialog_state"] = DialogState.CONFIRMING_PRD
 
-        await update.message.reply_text(
-            f"📄 **PRD создан!**\n\n"
-            f"{prd_content[:500]}...\n\n"
-            f"✅ `/confirm` — сохранить в GitHub\n"
-            f"❌ `/cancel` — отменить",
-            parse_mode="Markdown"
-        )
+        # Save to GitHub immediately for preview
+        try:
+            save_tool = SaveArtifactTool()
+            save_result = save_tool._run(
+                artifact_type="prd",
+                content=prd_content,
+                name="PRD"
+            )
+            await update.message.reply_text(
+                f"📄 **PRD создан и сохранён!**\n\n"
+                f"{save_result}\n\n"
+                f"✅ `/confirm` — подтвердить и создать Issue\n"
+                f"❌ `/cancel` — отменить",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            # Fallback: show truncated preview
+            logger.warning(f"Failed to pre-save PRD: {e}")
+            await update.message.reply_text(
+                f"📄 **PRD создан!** (превью)\n\n"
+                f"{prd_content[:500]}...\n\n"
+                f"✅ `/confirm` — сохранить полностью\n"
+                f"❌ `/cancel` — отменить",
+                parse_mode="Markdown"
+            )
 
     async def confirm_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Confirm PRD and save to GitHub."""
+        """Confirm PRD and create GitHub issue for tracking."""
         user = update.effective_user
         user_id = user.id if user else 0
 
@@ -593,19 +611,13 @@ class TelegramBot:
             await update.message.reply_text("❌ Нет PRD для подтверждения. Используй /new")
             return
 
-        # Save PRD to GitHub using artifact tools
+        # PRD already saved to GitHub during generation, just create issue
         try:
-            save_tool = SaveArtifactTool()
-            result = save_tool._run(
-                artifact_type="prd",
-                content=state["prd_draft"],
-                name="PRD"
-            )
-            
             # Create GitHub issue for tracking
+            prd_preview = state["prd_draft"][:1500]
             issue = create_github_issue(
                 title="New Feature Request (from PRD)",
-                body=f"Created from PRD dialog.\n\nSee docs/prd.md for details.",
+                body=f"Created from PRD dialog.\n\nSee [docs/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/prd.md) for full PRD.\n\n---\n\n{prd_preview}",
                 labels=["feature"]
             )
             
@@ -615,9 +627,9 @@ class TelegramBot:
             state["prd_draft"] = None
 
             await update.message.reply_text(
-                f"✅ **PRD сохранён в GitHub!**\n\n"
-                f"📄 {result}\n"
-                f"📋 Issue #{issue.get('number', 'N/A')} создан\n\n"
+                f"✅ **PRD подтверждён!**\n\n"
+                f"📋 Issue #{issue.get('number', 'N/A')} создан\n"
+                f"📄 [docs/prd.md](https://github.com/{settings.github_repo}/blob/main/docs/prd.md)\n\n"
                 f"Используй /run {issue.get('number', '')} чтобы запустить разработку",
                 parse_mode="Markdown"
             )

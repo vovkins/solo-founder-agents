@@ -112,11 +112,11 @@ class SaveArtifactTool(BaseTool):
 
         # Check permissions
         role = get_current_role()
-        allowed, reason = check_file_permission(role, filepath, "create")
-        
-        if not allowed:
-            logger.warning(f"Permission denied for {role} on {filepath}: {reason}")
-            return f"⚠️ Permission denied: {reason}\n\nPlease create files only in your designated directories."
+        if role:
+            allowed = check_file_permission(role, filepath, "create")
+            if not allowed:
+                logger.warning(f"Permission denied for {role} on {filepath}")
+                return f"⚠️ Permission denied for {role} on {filepath}\n\nPlease create files only in your designated directories."
 
         # Save artifact
         artifact = self.artifact_manager.create_artifact(
