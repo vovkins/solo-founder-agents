@@ -17,20 +17,9 @@ from .file_permissions import (
 
 logger = logging.getLogger(__name__)
 
-# Current role context (set by crew before running)
-_current_role: str = "developer"
-
-
-def set_current_role(role: str) -> None:
-    """Set the current role for permission checks."""
-    global _current_role
-    _current_role = role
-    logger.debug(f"Current role set to: {role}")
-
-
-def get_current_role() -> str:
-    """Get the current role for permission checks."""
-    return _current_role
+# Re-export set_current_role and get_current_role from file_permissions
+# (thread-local, not global — this is the SINGLE source of truth)
+# Crew runners should import from here or from file_permissions directly.
 
 
 class SaveArtifactInput(BaseModel):

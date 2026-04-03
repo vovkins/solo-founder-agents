@@ -79,7 +79,7 @@ def create_dev_crew(
 
 def run_dev_crew(issue_number: int, task_description: str) -> dict:
     """Run the development crew for a task."""
-    from src.tools.artifact_tools import set_current_role
+    from src.tools.file_permissions import set_current_role
     set_current_role("developer")
     
     crew = create_dev_crew(issue_number, task_description)

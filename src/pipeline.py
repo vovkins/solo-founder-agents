@@ -4,10 +4,13 @@ Each phase runs a single-agent crew with proper role isolation.
 No crew contains multiple agents — each role has its own crew.
 """
 
+import logging
 from enum import Enum
 from typing import Optional, Callable
 
 from src.tools.state import state_manager
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineStage(str, Enum):
@@ -63,8 +66,16 @@ class Pipeline:
         self.current_stage = PipelineStage.REQUIREMENTS
         state_manager.update_agent_state("pm", "working", "collecting_requirements")
 
+        # Verify role context before running crew
+        from src.tools.file_permissions import get_current_role
+        pre_role = get_current_role()
+        logger.info(f"Role context BEFORE pm_crew: {pre_role}")
+
         from src.crews import run_pm_crew
         result = run_pm_crew(founder_vision)
+
+        post_role = get_current_role()
+        logger.info(f"Role context AFTER pm_crew: {post_role}")
 
         self.state["prd_path"] = result.get("artifacts", {}).get("prd")
         state_manager.update_agent_state("pm", "idle")

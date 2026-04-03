@@ -53,7 +53,7 @@ def run_pm_crew(founder_vision: str) -> dict:
     Returns:
         Dictionary with results and outputs
     """
-    from src.tools.artifact_tools import set_current_role
+    from src.tools.file_permissions import set_current_role
     
     # Set role context for file permissions
     set_current_role("pm")

@@ -1,6 +1,7 @@
 """Artifact Manager for syncing artifacts to GitHub."""
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,6 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .github_tools import create_file_in_repo, read_file_from_repo, update_file_in_repo
+
+logger = logging.getLogger(__name__)
 
 
 class ArtifactType(Enum):
@@ -117,16 +120,26 @@ class ArtifactManager:
         # === PERMISSION CHECK (Level 3: Hard block) ===
         from .file_permissions import get_current_role, check_current_role_permission
         role = get_current_role()
-        if role:
-            if not check_current_role_permission(artifact.path, "create"):
-                logger.error(
-                    f"BLOCKED: Role '{role}' tried to write to '{artifact.path}' — "
-                    f"permission denied. File NOT saved."
-                )
-                raise PermissionError(
-                    f"Role '{role}' cannot write to '{artifact.path}'. "
-                    f"Check your permissions with list_my_files tool."
-                )
+        logger.info(f"[PERMISSION CHECK] role={role}, path={artifact.path}, action=create")
+        if role is None:
+            logger.error(
+                f"BLOCKED: No role context set — tried to write to '{artifact.path}'. "
+                f"File NOT saved. Call set_current_role() before saving artifacts."
+            )
+            raise PermissionError(
+                f"No role context set. Cannot write to '{artifact.path}'. "
+                f"The crew runner must call set_current_role() before saving."
+            )
+        if not check_current_role_permission(artifact.path, "create"):
+            logger.error(
+                f"BLOCKED: Role '{role}' tried to write to '{artifact.path}' — "
+                f"permission denied. File NOT saved."
+            )
+            raise PermissionError(
+                f"Role '{role}' cannot write to '{artifact.path}'. "
+                f"Check your permissions with list_my_files tool."
+            )
+        logger.info(f"[PERMISSION GRANTED] role={role} → {artifact.path}")
 
         # Save locally
         local_path = self.local_dir / artifact.path
