@@ -1,67 +1,64 @@
-"""Lazy agent initialization with caching."""
+"""Lazy agent initialization with caching.
 
-_agent_cache: dict = {}
+Architecture improvement A: Now uses AgentCache with TTL and LRU eviction.
+"""
+
+from .agent_cache import agent_cache
 
 
 def get_pm_agent():
-    """Get PM agent (cached)."""
-    if "pm" not in _agent_cache:
-        from .pm import create_pm_agent
-        _agent_cache["pm"] = create_pm_agent()
-    return _agent_cache["pm"]
+    """Get PM agent (cached with TTL)."""
+    from .pm import create_pm_agent
+    return agent_cache.get_or_create("pm", create_pm_agent)
 
 
 def get_analyst_agent():
-    """Get Analyst agent (cached)."""
-    if "analyst" not in _agent_cache:
-        from .analyst import create_analyst_agent
-        _agent_cache["analyst"] = create_analyst_agent()
-    return _agent_cache["analyst"]
+    """Get Analyst agent (cached with TTL)."""
+    from .analyst import create_analyst_agent
+    return agent_cache.get_or_create("analyst", create_analyst_agent)
 
 
 def get_architect_agent():
-    """Get Architect agent (cached)."""
-    if "architect" not in _agent_cache:
-        from .architect import create_architect_agent
-        _agent_cache["architect"] = create_architect_agent()
-    return _agent_cache["architect"]
+    """Get Architect agent (cached with TTL)."""
+    from .architect import create_architect_agent
+    return agent_cache.get_or_create("architect", create_architect_agent)
 
 
 def get_designer_agent():
-    """Get Designer agent (cached)."""
-    if "designer" not in _agent_cache:
-        from .designer import create_designer_agent
-        _agent_cache["designer"] = create_designer_agent()
-    return _agent_cache["designer"]
+    """Get Designer agent (cached with TTL)."""
+    from .designer import create_designer_agent
+    return agent_cache.get_or_create("designer", create_designer_agent)
 
 
 def get_developer_agent():
-    """Get Developer agent (cached)."""
-    if "developer" not in _agent_cache:
-        from .developer import create_developer_agent
-        _agent_cache["developer"] = create_developer_agent()
-    return _agent_cache["developer"]
+    """Get Developer agent (cached with TTL)."""
+    from .developer import create_developer_agent
+    return agent_cache.get_or_create("developer", create_developer_agent)
 
 
 def get_reviewer_agent():
-    """Get Reviewer agent (cached)."""
-    if "reviewer" not in _agent_cache:
-        from .reviewer import create_reviewer_agent
-        _agent_cache["reviewer"] = create_reviewer_agent()
-    return _agent_cache["reviewer"]
+    """Get Reviewer agent (cached with TTL)."""
+    from .reviewer import create_reviewer_agent
+    return agent_cache.get_or_create("reviewer", create_reviewer_agent)
 
 
 def get_qa_agent():
-    """Get QA agent (cached)."""
-    if "qa" not in _agent_cache:
-        from .qa import create_qa_agent
-        _agent_cache["qa"] = create_qa_agent()
-    return _agent_cache["qa"]
+    """Get QA agent (cached with TTL)."""
+    from .qa import create_qa_agent
+    return agent_cache.get_or_create("qa", create_qa_agent)
 
 
 def get_tech_writer_agent():
-    """Get Tech Writer agent (cached)."""
-    if "tech_writer" not in _agent_cache:
-        from .tech_writer import create_tech_writer_agent
-        _agent_cache["tech_writer"] = create_tech_writer_agent()
-    return _agent_cache["tech_writer"]
+    """Get Tech Writer agent (cached with TTL)."""
+    from .tech_writer import create_tech_writer_agent
+    return agent_cache.get_or_create("tech_writer", create_tech_writer_agent)
+
+
+def get_agent_cache_stats():
+    """Get agent cache statistics."""
+    return agent_cache.stats()
+
+
+def clear_agent_cache():
+    """Clear all cached agents."""
+    agent_cache.clear()
