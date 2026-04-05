@@ -1,27 +1,15 @@
 # Solo Founder Agents - Docker Compose
 
 services:
-  # Main Application (stays running for docker exec commands)
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: solo-founder-agents
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - ./data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-
-  # Telegram Bot (optional)
   telegram-bot:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: sfa-telegram
-    restart: unless-stopped
+      dockerfile
+      args:
+        build:
+          dockerfile: ./Dockerfile
+          dockerfile: ./docker-compose.yml
+      target: telegram-bot
     env_file:
       - .env
     volumes:
