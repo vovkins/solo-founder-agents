@@ -242,5 +242,17 @@ class ListMyFilesTool(BaseTool):
 
 
 def get_artifact_tools() -> list:
-    """Get all artifact tools for use in agents."""
-    return [SaveArtifactTool(), ReadArtifactTool(), SyncArtifactsTool(), ListMyFilesTool()]
+    """Get full artifact tools for agents that can create/edit files.
+
+    Includes: SaveArtifactTool, ReadArtifactTool, ListMyFilesTool.
+    Does NOT include SyncArtifactsTool (bypasses permissions).
+    """
+    return [SaveArtifactTool(), ReadArtifactTool(), ListMyFilesTool()]
+
+
+def get_readonly_artifact_tools() -> list:
+    """Get read-only artifact tools for agents that cannot create files.
+
+    Includes: ReadArtifactTool, ListMyFilesTool only.
+    """
+    return [ReadArtifactTool(), ListMyFilesTool()]

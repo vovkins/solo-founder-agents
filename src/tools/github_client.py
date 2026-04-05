@@ -54,7 +54,11 @@ class GitHubClient:
         labels: Optional[List[str]] = None,
         state: Optional[str] = None,
     ) -> Issue.Issue:
-        """Update an existing issue."""
+        """Update an existing issue.
+
+        Note: PyGithub's issue.edit() returns None, so we re-fetch the issue
+        to return the updated object.
+        """
         issue = self.get_issue(issue_number)
         kwargs = {}
         if title:
@@ -65,7 +69,9 @@ class GitHubClient:
             kwargs["labels"] = labels
         if state:
             kwargs["state"] = state
-        return issue.edit(**kwargs)
+        issue.edit(**kwargs)
+        # Re-fetch to get updated state
+        return self.get_issue(issue_number)
 
     def add_label(self, issue_number: int, label: str) -> None:
         """Add a label to an issue."""

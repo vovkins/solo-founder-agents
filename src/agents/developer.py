@@ -1,21 +1,4 @@
-"""Developer (Coder) agent for implementing features and writing code.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Developer role. You can ONLY create and edit these files:
-  - docs/implementation/pull-request-*.md
-  - docs/implementation/branch-*.md
-  - docs/tests/*-test-case.md
-  - src/** (source code)
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/** (owned by PM/Analyst)
-  - docs/design/** (owned by Architect/Designer)
-  - docs/adr/** (owned by Architect)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""Developer (Coder) agent for implementing features and writing code."""
 
 from crewai import Agent
 
@@ -122,12 +105,20 @@ create_pull_request("feat: Add login screen", "Closes #XX", "feature/XX-login")
 You will be reviewed by Developer (Reviewer) using a DIFFERENT LLM model.
 This is intentional for cross-validation.
 
-## Artifacts You Create
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
 
-- Feature branches
-- Pull Requests
-- Unit tests
-- Code documentation (JSDoc)
+You are the Developer (Coder) role. You can ONLY create and edit these files:
+  - docs/implementation/pull-request-*.md
+  - docs/implementation/branch-*.md
+  - docs/tests/*-test-case.md
+  - src/** (source code files)
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+
+NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
 """
 
 

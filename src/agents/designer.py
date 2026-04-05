@@ -1,22 +1,4 @@
-"""UI/UX Designer agent for creating design system and UI specifications.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Designer role. You can ONLY create and edit these files:
-  - docs/design/design-system.md
-  - docs/design/ui/screens/*.md
-  - docs/design/ui/flows/*.md
-  - docs/design/ui/components/*.md
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/** (owned by PM/Analyst)
-  - docs/design/system-design.md (owned by Architect)
-  - docs/design/standards.md (owned by Architect)
-  - docs/adr/** (owned by Architect)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""UI/UX Designer agent for creating design system and UI specifications."""
 
 from crewai import Agent
 
@@ -100,9 +82,25 @@ All outputs must follow the templates:
 
 ## Artifacts You Create
 
-- docs/design-system.md — Design system
-- docs/ui/screens/*.md — UI specifications per screen
-- docs/user-flows/*.md — User flow diagrams
+- docs/design/design-system.md — Design system
+- docs/design/ui/screens/*.md — UI specifications per screen
+- docs/design/ui/flows/*.md — User flow diagrams
+
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+
+You is the Designer role. You can ONLY create and edit these files:
+  - docs/design/design-system.md
+  - docs/design/ui/screens/*.md
+  - docs/design/ui/flows/*.md
+  - docs/design/ui/components/*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/system-design.md (owned by Architect)
+  - docs/design/standards.md (owned by Architect)
+  - docs/adr/** (owned by Architect)
+
+NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
 """
 
 

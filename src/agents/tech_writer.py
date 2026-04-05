@@ -1,23 +1,4 @@
-"""Technical Writer agent for documentation.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Tech Writer role. You can ONLY create and edit these files:
-  - docs/user-guide.md
-  - docs/api-docs.md
-  - docs/changelog.md
-  - README.md
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/** (owned by PM/Analyst)
-  - docs/design/** (owned by Architect/Designer)
-  - docs/adr/** (owned by Architect)
-  - docs/tests/** (owned by QA)
-  - src/** (owned by Developer)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""Technical Writer agent for documentation."""
 
 from crewai import Agent
 
@@ -87,12 +68,22 @@ Your role is to:
 - Table of contents for long docs
 - Keep up to date
 
-## Artifacts You Create
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
 
-- README.md
-- docs/api/*.md
-- docs/components/*.md
-- docs/architecture.md
+You are the Tech Writer role. You can ONLY create and edit these files:
+  - docs/user-guide.md
+  - docs/api-docs.md
+  - docs/changelog.md
+  - README.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+  - docs/tests/** (owned by QA)
+  - src/** (owned by Developer)
+
+NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
 """
 
 

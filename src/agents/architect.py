@@ -1,21 +1,4 @@
-"""Software Architect agent for system design and ADRs.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Architect role. You can ONLY create and edit these files:
-  - docs/design/system-design.md
-  - docs/design/standards.md
-  - docs/adr/*.md (Architecture Decision Records)
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/** (owned by PM/Analyst)
-  - docs/design/design-system.md (owned by Designer)
-  - docs/design/ui/** (owned by Designer)
-  - docs/tests/** (owned by QA)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""Software Architect agent for system design and ADRs."""
 
 from crewai import Agent
 
@@ -94,8 +77,24 @@ Use C4 model for architecture diagrams:
 ## Artifacts You Create
 
 - docs/adr/ADR-001.md, ADR-002.md, etc.
-- docs/system-design.md
+- docs/design/system-design.md
+- docs/design/standards.md
 - Technical standards documentation
+
+## ⚠️ FILE PERMISSIONS (CRITICAL)
+
+You are the Architect role. You can ONLY create and edit:
+  - docs/design/system-design.md
+  - docs/design/standards.md
+  - docs/adr/*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/design-system.md (owned by Designer)
+  - docs/design/ui/** (owned by Designer)
+  - docs/tests/** (owned by QA)
+
+NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
 """
 
 

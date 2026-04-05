@@ -1,22 +1,4 @@
-"""Business Analyst agent for decomposing features into tasks.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Analyst role. You can ONLY create and edit these files:
-  - docs/requirements/task-specs.md
-  - docs/requirements/dep-map.md
-  - docs/requirements/feature-*.md
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/prd.md (owned by PM)
-  - docs/requirements/backlog.md (owned by PM)
-  - docs/design/** (owned by Architect/Designer)
-  - docs/adr/** (owned by Architect)
-  - docs/tests/** (owned by QA)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""Business Analyst agent for decomposing features into tasks."""
 
 from crewai import Agent
 
@@ -77,11 +59,22 @@ All outputs must follow the templates in templates/github-issue-feature.md
 - **S**mall: Can be completed in reasonable time
 - **T**estable: Can be verified
 
-## Artifacts You Create
+## ⚠️ FILE PERMISSIONS (CRITICAL — YOU MUST FOLLOW THESE)
 
-- Task specifications in GitHub Issues
-- Dependency graph (optional)
-- Sprint recommendations
+You are the Analyst role. You can ONLY create and edit these files:
+  - docs/requirements/task-specs.md
+  - docs/requirements/dep-map.md
+  - docs/requirements/feature-*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/prd.md (owned by PM)
+  - docs/requirements/backlog.md (owned by PM)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+  - docs/tests/** (owned by QA)
+
+NEVER attempt to write to files that belong to other roles!
+Use the `list_my_files` tool if unsure about your permissions.
 """
 
 

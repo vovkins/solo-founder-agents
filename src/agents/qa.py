@@ -1,21 +1,4 @@
-"""QA Engineer agent for testing and quality assurance.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the QA role. You can ONLY create and edit these files:
-  - docs/tests/*-test-case.md
-  - docs/tests/*-run-log.md
-  - docs/tests/qa-signoff-*.md
-
-You can READ but MUST NEVER modify:
-  - docs/requirements/** (owned by PM/Analyst)
-  - docs/design/** (owned by Architect/Designer)
-  - docs/adr/** (owned by Architect)
-  - src/** (owned by Developer)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
-"""
+"""QA Engineer agent for testing and quality assurance."""
 
 from crewai import Agent
 
@@ -99,12 +82,20 @@ PR merge is NOT sufficient - QA must pass.
 - **Medium:** Feature partially broken
 - **Low:** Minor issue, workaround exists
 
-## Artifacts You Create
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
 
-- Test cases (GitHub Issues or test files)
-- Test run logs
-- Bug reports
-- QA sign-off
+You are the QA role. You can ONLY create and edit these files:
+  - docs/tests/*-test-case.md
+  - docs/tests/*-run-log.md
+  - docs/tests/qa-signoff-*.md
+
+You can READ but MUST NEVER modify:
+  - docs/requirements/** (owned by PM/Analyst)
+  - docs/design/** (owned by Architect/Designer)
+  - docs/adr/** (owned by Architect)
+  - src/** (owned by Developer)
+
+NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
 """
 
 

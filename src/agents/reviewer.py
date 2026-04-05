@@ -1,18 +1,9 @@
-"""Developer (Reviewer) agent for code review.
-
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
-
-You are the Reviewer role. You can ONLY READ files. You cannot create or edit any files.
-  - docs/** (read only)
-  - src/** (read only)
-
-Your job is to review code and provide feedback, not to modify files.
-"""
+"""Developer (Reviewer) agent for code review."""
 
 from crewai import Agent
 
 from src.crews.base import LLMProvider
-from src.tools import get_artifact_tools
+from src.tools import get_readonly_artifact_tools
 
 # System prompt for Developer Reviewer
 REVIEWER_SYSTEM_PROMPT = """You are a Developer (Reviewer) agent in a multi-agent AI system for solo founders.
@@ -105,11 +96,14 @@ that one model might miss.
 - Suggest HOW to fix it
 - Use code examples when helpful
 
-## Artifacts You Create
+## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
 
-- PR review comments
-- Approval/Request changes
-- Summary of review
+You are the Reviewer role. You can ONLY READ files. You CANNOT create or edit any files.
+  - docs/** (read only)
+  - src/** (read only)
+
+Your job is to review code and provide feedback, NOT to modify files.
+DO NOT use save_artifact or sync_artifacts tools — you are read-only!
 """
 
 
@@ -124,7 +118,7 @@ def create_reviewer_agent() -> Agent:
         goal="Review code for quality, security, and best practices",
         backstory=REVIEWER_SYSTEM_PROMPT,
         llm=LLMProvider.get_reviewer_llm(),
-        tools=get_artifact_tools(),
+        tools=get_readonly_artifact_tools(),  # Read-only — reviewer cannot create files
         verbose=True,
         allow_delegation=False,
     )
