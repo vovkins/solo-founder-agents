@@ -284,6 +284,11 @@ class Pipeline:
     # =========================================================================
 
     def get_status(self) -> dict:
+        """Get current pipeline status.
+
+        Returns:
+            dict: Current stage and state information
+        """
         with self._lock:
             return {
                 "current_stage": self.current_stage.value,
@@ -292,6 +297,11 @@ class Pipeline:
             }
 
     def is_complete(self) -> bool:
+        """Check if pipeline has completed all phases.
+
+        Returns:
+            bool: True if pipeline is complete
+        """
         with self._lock:
             return self.current_stage == PipelineStage.COMPLETE
 
