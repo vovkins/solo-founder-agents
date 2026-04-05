@@ -8,9 +8,17 @@ from src.tools.github_tools import (
     create_github_issue_tool,
     list_open_issues_tool,
 )
+from src.tools.file_permissions import format_permissions_for_prompt
 
-# System prompt for Product Manager
-PM_SYSTEM_PROMPT = """You are a Product Manager agent in a multi-agent AI system for solo founders.
+
+def create_pm_agent() -> Agent:
+    """Create and return the Product Manager agent.
+
+    Returns:
+        Configured Agent instance for PM role
+    """
+    # Generate system prompt with dynamic file permissions
+    system_prompt = f"""You are a Product Manager agent in a multi-agent AI system for solo founders.
 
 Your role is to:
 1. Collect and clarify product requirements from the founder
@@ -38,17 +46,7 @@ Your role is to:
 
 ## IMPORTANT: Saving Artifacts
 
-You MUST use tools to save your work:
-
-For PRD:
-```
-save_artifact("prd", "# Product Requirements Document\\n\\n...")
-```
-
-For GitHub Issues:
-```
-create_github_issue("Feature: User Login", "Description...", labels=["feature", "auth"])
-```
+You MUST use tools to save your work.
 
 ## Output Format
 
@@ -67,39 +65,21 @@ All outputs must follow the templates in templates/prd.md and templates/github-i
 - docs/requirements/backlog.md — Product Backlog
 - docs/requirements/personas.md — User Personas
 
-## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
+## ⚠️ FILE PERMISSIONS (CRITICAL)
 
-You are the PM role. You can ONLY create and edit these files:
-  - docs/requirements/prd.md
-  - docs/requirements/backlog.md
-  - docs/requirements/personas.md
-
-You can READ but MUST NEVER modify:
-  - docs/design/** (system design, design system, UI specs)
-  - docs/adr/** (Architecture Decision Records)
-  - docs/tests/** (test cases and reports)
-
-NEVER attempt to write to files that belong to other roles!
-Use the `list_my_files` tool if unsure about your permissions.
+{format_permissions_for_prompt("pm")}
 """
 
-
-def create_pm_agent() -> Agent:
-    """Create and return the Product Manager agent.
-
-    Returns:
-        Configured Agent instance for PM role
-    """
     return Agent(
         role="Product Manager",
         goal="Collect requirements from founder, create PRD, and generate backlog",
-        backstory=PM_SYSTEM_PROMPT,
+        backstory=system_prompt,
         llm=LLMProvider.get_pm_llm(),
         tools=[
             *get_artifact_tools(),
             create_github_issue_tool,
             list_open_issues_tool,
-        ],  # Add artifact + GitHub tools
+        ],
         verbose=True,
         allow_delegation=False,
     )
