@@ -1,0 +1,117 @@
+# Agent Configuration
+# Architecture improvement D: Configuration-driven agent creation
+
+agents:
+  - name: pm
+    role: Product Manager
+    goal: Collect requirements from founder, create PRD, and generate backlog
+    backstory_file: prompts/pm/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - save_artifact
+      - create_github_issue
+      - list_open_issues
+    permissions: pm
+    verbose: true
+    allow_delegation: false
+
+  - name: analyst
+    role: Business Analyst
+    goal: Analyze PRD and decompose into technical tasks
+    backstory_file: prompts/analyst/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_artifact
+      - save_artifact
+      - create_github_issue
+      - list_open_issues
+    permissions: analyst
+    verbose: true
+    allow_delegation: false
+
+  - name: architect
+    role: System Architect
+    goal: Create system design and architecture decisions
+    backstory_file: prompts/architect/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_artifact
+      - save_artifact
+      - create_file_in_repo
+      - read_file_from_repo
+    permissions: architect
+    verbose: true
+    allow_delegation: false
+
+  - name: designer
+    role: UI/UX Designer
+    goal: Create UI specifications and design system
+    backstory_file: prompts/designer/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_artifact
+      - save_artifact
+      - create_file_in_repo
+    permissions: designer
+    verbose: true
+    allow_delegation: false
+
+  - name: developer
+    role: Software Developer
+    goal: Implement features and create pull requests
+    backstory_file: prompts/developer/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_artifact
+      - create_file_in_repo
+      - read_file_from_repo
+      - create_branch
+      - create_pull_request
+    permissions: developer
+    verbose: true
+    allow_delegation: false
+
+  - name: reviewer
+    role: Code Reviewer
+    goal: Review code changes and ensure quality
+    backstory_file: prompts/reviewer/system-prompt.md
+    llm: openai/gpt-5.1-codex-mini
+    tools:
+      - read_file_from_repo
+      - get_pull_request
+    permissions: reviewer
+    verbose: true
+    allow_delegation: false
+
+  - name: qa
+    role: QA Engineer
+    goal: Test implementation and verify acceptance criteria
+    backstory_file: prompts/qa/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_file_from_repo
+      - get_pull_request
+    permissions: qa
+    verbose: true
+    allow_delegation: false
+
+  - name: tech_writer
+    role: Technical Writer
+    goal: Update documentation and README files
+    backstory_file: prompts/tech_writer/system-prompt.md
+    llm: z-ai/glm-5
+    tools:
+      - read_artifact
+      - save_artifact
+      - create_file_in_repo
+      - read_file_from_repo
+    permissions: tech_writer
+    verbose: true
+    allow_delegation: false
+
+# Global agent settings
+settings:
+  cache_ttl_minutes: 30
+  cache_max_size: 20
+  default_llm: z-ai/glm-5
+  review_llm: openai/gpt-5.1-codex-mini
