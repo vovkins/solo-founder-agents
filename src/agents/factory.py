@@ -42,6 +42,7 @@ class AgentFactory:
         self._config: Dict[str, Any] = {}
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._load_config()
+        self._validate_prompts()  # Validate prompt files exist at startup
     
     def _load_config(self) -> None:
         """Load configuration from YAML file."""
@@ -108,31 +109,79 @@ class AgentFactory:
         return tools
     
     def load_backstory(self, backstory_file: str, role: str) -> str:
-        """Load backstory from file or generate default.
-        
+        """Load backstory from file with validation.
+
         Args:
             backstory_file: Path to backstory markdown file
             role: Agent role name
-        
+
         Returns:
             Backstory string
+
+        Raises:
+            FileNotFoundError: If backstory file not found
+            ValueError: If FILE_PERMISSIONS placeholder missing
         """
         backstory_path = Path(backstory_file)
-        
-        if backstory_path.exists():
-            with open(backstory_path, "r") as f:
+
+        # VALIDATION: Check file exists
+        if not backstory_path.exists():
+            logger.error(f"Backstory file not found: {backstory_file}")
+            raise FileNotFoundError(
+                f"Backstory file not found: {backstory_file}. "
+                f"All agents require a system prompt file in prompts/{{role}}/system-prompt.md"
+            )
+
+        # Load file
+        try:
+            with open(backstory_path, "r", encoding="utf-8") as f:
                 backstory = f.read()
-            
-            # Inject file permissions
-            permissions_section = format_permissions_for_prompt(role)
-            backstory = backstory.replace("{{FILE_PERMISSIONS}}", permissions_section)
-            
-            return backstory
-        
-        # Fallback: generate basic backstory
-        logger.warning(f"Backstory file not found: {backstory_file}")
-        return f"You are a {role} agent in a multi-agent AI system."
-    
+        except IOError as e:
+            logger.error(f"Failed to read backstory file {backstory_file}: {e}")
+            raise
+
+        # VALIDATION: Check placeholder exists
+        if "{{FILE_PERMISSIONS}}" not in backstory:
+            logger.warning(
+                f"Missing {{{{FILE_PERMISSIONS}}}} placeholder in {backstory_file}. "
+                f"File permissions will not be injected for role \"{role}\"."
+            )
+
+        # Inject file permissions
+        permissions_section = format_permissions_for_prompt(role)
+        backstory = backstory.replace("{{FILE_PERMISSIONS}}", permissions_section)
+
+        logger.info(f"Loaded backstory for {role} from {backstory_file} ({len(backstory)} chars)")
+        return backstory
+
+
+
+    def _validate_prompts(self) -> None:
+        """Validate that all system prompt files exist at startup.
+
+        Raises:
+            FileNotFoundError: If any prompt file is missing
+        """
+        missing_files = []
+
+        for agent_config in self._config.get("agents", []):
+            name = agent_config.get("name")
+            backstory_file = agent_config.get("backstory_file")
+
+            if backstory_file:
+                prompt_path = Path(backstory_file)
+                if not prompt_path.exists():
+                    missing_files.append(f"{name}: {backstory_file}")
+
+        if missing_files:
+            error_msg = f"Missing system prompt files:\n" + "\n".join(f"  - {f}" for f in missing_files)
+            logger.error(error_msg)
+            raise FileNotFoundError(
+                f"Missing system prompt files. Please create all .md files in prompts/ directory.\n{error_msg}"
+            )
+
+        logger.info(f"Validated {len(self._config.get('''agents''', []))} agent prompt files - all present")
+
     def create_agent(self, agent_name: str) -> Agent:
         """Create an agent by name.
         
@@ -198,6 +247,7 @@ class AgentFactory:
     def reload_config(self) -> None:
         """Reload configuration from file."""
         self._load_config()
+        self._validate_prompts()  # Validate prompt files exist at startup
 
 
 # Global agent factory instance
