@@ -45,7 +45,7 @@ def create_pm_crew(
     )
 
 
-def run_pm_crew(founder_vision: str) -> dict:
+def run_pm_crew(founder_vision: str) -> CrewResult:
     """Run the PM crew and return results."""
     import logging
     from src.tools.file_permissions import set_current_role
