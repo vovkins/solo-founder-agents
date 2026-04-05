@@ -17,7 +17,7 @@ from telegram.ext import (
 )
 
 from config.settings import settings
-from src.pipeline import pipeline, Checkpoint
+from src.pipeline.pipeline import pipeline, Checkpoint
 from src.tools.state import state_manager
 from src.tools import list_open_issues, create_github_issue
 from src.tools.artifact_tools import SaveArtifactTool
