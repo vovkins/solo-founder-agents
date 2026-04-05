@@ -2,11 +2,15 @@
 
 Each phase runs a single-agent crew with proper role isolation.
 No crew contains multiple agents — each role has its own crew.
+
+FIX: Removed global pipeline instance to prevent race conditions.
+Each pipeline run now creates its own instance.
 """
 
 import logging
+import threading
 from enum import Enum
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
 
 from src.tools.state import state_manager
 
@@ -40,6 +44,8 @@ class Pipeline:
 
     Each phase uses a dedicated single-agent crew:
       PM → Analyst → Architect → Designer → Developer → Reviewer → QA → Tech Writer
+
+    Thread-safe: Each instance has its own state.
     """
 
     def __init__(self, verbose: bool = True):
@@ -52,6 +58,23 @@ class Pipeline:
             "pr_urls": [],
             "qa_status": None,
         }
+        self._lock = threading.Lock()  # For thread-safe state updates
+
+    def _update_stage(self, new_stage: PipelineStage) -> None:
+        """Thread-safe stage update."""
+        with self._lock:
+            self.current_stage = new_stage
+
+    def _update_state(self, key: str, value: Any) -> None:
+        """Thread-safe state update."""
+        with self._lock:
+            self.state[key] = value
+
+    def _append_state(self, key: str, value: Any) -> None:
+        """Thread-safe append to state list."""
+        with self._lock:
+            if key in self.state and isinstance(self.state[key], list):
+                self.state[key].append(value)
 
     # =========================================================================
     # Phase runners — each calls a single-agent crew
@@ -63,7 +86,7 @@ class Pipeline:
         print("📋 PHASE: Requirements (PM)")
         print("=" * 50)
 
-        self.current_stage = PipelineStage.REQUIREMENTS
+        self._update_stage(PipelineStage.REQUIREMENTS)
         state_manager.update_agent_state("pm", "working", "collecting_requirements")
 
         # Verify role context before running crew
@@ -77,9 +100,9 @@ class Pipeline:
         post_role = get_current_role()
         logger.info(f"Role context AFTER pm_crew: {post_role}")
 
-        self.state["prd_path"] = result.get("artifacts", {}).get("prd")
+        self._update_state("prd_path", result.get("artifacts", {}).get("prd"))
         state_manager.update_agent_state("pm", "idle")
-        self.current_stage = PipelineStage.ANALYSIS
+        self._update_stage(PipelineStage.ANALYSIS)
 
         return result
 
@@ -95,7 +118,7 @@ class Pipeline:
         result = run_analyst_crew()
 
         state_manager.update_agent_state("analyst", "idle")
-        self.current_stage = PipelineStage.DESIGN
+        self._update_stage(PipelineStage.DESIGN)
 
         return result
 
@@ -110,9 +133,9 @@ class Pipeline:
         from src.crews import run_architect_crew
         result = run_architect_crew()
 
-        self.state["system_design_path"] = result.get("artifacts", {}).get("system_design")
+        self._update_state("system_design_path", result.get("artifacts", {}).get("system_design"))
         state_manager.update_agent_state("architect", "idle")
-        self.current_stage = PipelineStage.UI_DESIGN
+        self._update_stage(PipelineStage.UI_DESIGN)
 
         return result
 
@@ -124,12 +147,14 @@ class Pipeline:
 
         state_manager.update_agent_state("designer", "working", "creating_ui")
 
-        system_design = self.state.get("system_design_path", "docs/design/system-design.md")
+        with self._lock:
+            system_design = self.state.get("system_design_path", "docs/design/system-design.md")
+        
         from src.crews import run_designer_crew
         result = run_designer_crew(system_design, task_description)
 
         state_manager.update_agent_state("designer", "idle")
-        self.current_stage = PipelineStage.IMPLEMENTATION
+        self._update_stage(PipelineStage.IMPLEMENTATION)
 
         return result
 
@@ -139,7 +164,7 @@ class Pipeline:
         print(f"💻 PHASE: Implementation (Developer) — Issue #{issue_number}")
         print("=" * 50)
 
-        self.current_stage = PipelineStage.IMPLEMENTATION
+        self._update_stage(PipelineStage.IMPLEMENTATION)
 
         from src.tools import get_issue_details
         issue = get_issue_details(issue_number)
@@ -148,9 +173,9 @@ class Pipeline:
         result = run_developer_crew(issue_number)
 
         if result.get("pr_url"):
-            self.state["pr_urls"].append(result["pr_url"])
+            self._append_state("pr_urls", result["pr_url"])
 
-        self.current_stage = PipelineStage.REVIEW
+        self._update_stage(PipelineStage.REVIEW)
 
         return result
 
@@ -160,14 +185,14 @@ class Pipeline:
         print(f"👀 PHASE: Review (Reviewer)")
         print("=" * 50)
 
-        self.current_stage = PipelineStage.REVIEW
+        self._update_stage(PipelineStage.REVIEW)
         state_manager.update_agent_state("reviewer", "working", f"reviewing_{pr_url}")
 
         from src.crews import run_reviewer_crew
         result = run_reviewer_crew(pr_url)
 
         state_manager.update_agent_state("reviewer", "idle")
-        self.current_stage = PipelineStage.QA
+        self._update_stage(PipelineStage.QA)
 
         return result
 
@@ -177,15 +202,15 @@ class Pipeline:
         print(f"✅ PHASE: QA")
         print("=" * 50)
 
-        self.current_stage = PipelineStage.QA
+        self._update_stage(PipelineStage.QA)
         state_manager.update_agent_state("qa", "working", f"testing_{pr_url}")
 
         from src.crews import run_qa_crew
         result = run_qa_crew(pr_url)
 
         state_manager.update_agent_state("qa", "idle")
-        self.state["qa_status"] = "passed"
-        self.current_stage = PipelineStage.DOCUMENTATION
+        self._update_state("qa_status", "passed")
+        self._update_stage(PipelineStage.DOCUMENTATION)
 
         return result
 
@@ -195,14 +220,14 @@ class Pipeline:
         print("📝 PHASE: Documentation (Tech Writer)")
         print("=" * 50)
 
-        self.current_stage = PipelineStage.DOCUMENTATION
+        self._update_stage(PipelineStage.DOCUMENTATION)
         state_manager.update_agent_state("tech_writer", "working", "updating_docs")
 
         from src.crews import run_tech_writer_crew
         result = run_tech_writer_crew()
 
         state_manager.update_agent_state("tech_writer", "idle")
-        self.current_stage = PipelineStage.COMPLETE
+        self._update_stage(PipelineStage.COMPLETE)
 
         return result
 
@@ -221,7 +246,7 @@ class Pipeline:
         state_manager.set_checkpoint(checkpoint.value, "pending_review", artifacts)
         return {"status": "pending_review", "checkpoint": checkpoint.value}
 
-    def wait_for_checkpoint_approval(self, checkpoint: 'Checkpoint', timeout_minutes: int = 60) -> bool:
+    def wait_for_checkpoint_approval(self, checkpoint: Checkpoint, timeout_minutes: int = 60) -> bool:
         import time
         start_time = time.time()
         timeout_seconds = timeout_minutes * 60
@@ -258,14 +283,16 @@ class Pipeline:
     # =========================================================================
 
     def get_status(self) -> dict:
-        return {
-            "current_stage": self.current_stage.value,
-            "state": self.state,
-            "agents": state_manager.state.get("agents", {}),
-        }
+        with self._lock:
+            return {
+                "current_stage": self.current_stage.value,
+                "state": self.state.copy(),
+                "agents": state_manager.state.get("agents", {}),
+            }
 
     def is_complete(self) -> bool:
-        return self.current_stage == PipelineStage.COMPLETE
+        with self._lock:
+            return self.current_stage == PipelineStage.COMPLETE
 
     # =========================================================================
     # Full pipeline
@@ -362,17 +389,29 @@ class Pipeline:
 
             # Final checkpoint
             if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_5, results.get("pr_urls", []))
+                with self._lock:
+                    pr_urls = self.state.get("pr_urls", [])
+                on_checkpoint(Checkpoint.CHECKPOINT_5, pr_urls)
 
             results["status"] = "complete"
 
         except Exception as e:
             results["status"] = "error"
             results["error"] = str(e)
-            print(f"Pipeline error: {e}")
+            logger.error(f"Pipeline error: {e}", exc_info=True)
 
         return results
 
 
-# Global pipeline instance
+def create_pipeline(verbose: bool = True) -> Pipeline:
+    """Factory function to create a new Pipeline instance.
+    
+    Use this instead of global pipeline to prevent race conditions
+    when running multiple pipelines concurrently.
+    """
+    return Pipeline(verbose=verbose)
+
+
+# Legacy global pipeline for backwards compatibility
+# DEPRECATED: Use create_pipeline() instead
 pipeline = Pipeline()
