@@ -36,8 +36,47 @@ class LRUCache:
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
         self._lock = threading.Lock()
-        self._cache: OrderedDict = OrderedDict()  # model_name -> (LLM, timestamp)
+        self._cache: OrderedDict = OrderedDict()
+        self._cleanup_thread = None
+        self._running = True
+        self._start_cleanup_thread()  # model_name -> (LLM, timestamp)
     
+
+    def _start_cleanup_thread(self) -> None:
+        """Start background cleanup thread."""
+        def cleanup_loop():
+            while self._running:
+                time.sleep(300)  # Every 5 minutes
+                self._cleanup_expired()
+        
+        self._cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
+        self._cleanup_thread.start()
+        logger.info("LRU cache cleanup thread started (TTL: %ds, max_size: %d)", 
+                   self.ttl_seconds, self.max_size)
+    
+    def _cleanup_expired(self) -> None:
+        """Remove expired entries from cache."""
+        with self._lock:
+            current_time = time.time()
+            expired = [
+                k for k, (_, ts) in self._cache.items()
+                if current_time - ts > self.ttl_seconds
+            ]
+            for k in expired:
+                del self._cache[k]
+                logger.info("Cleaned up expired cache entry: %s (age: %.0fs)", 
+                           k, current_time - self._cache.get(k, (None, 0))[1] if k in self._cache else 0)
+            
+            if expired:
+                logger.info("Cleaned up %d expired entries, cache size: %d", 
+                           len(expired), len(self._cache))
+
+    def stop_cleanup(self) -> None:
+        """Stop cleanup thread (for testing/graceful shutdown)."""
+        self._running = False
+        if self._cleanup_thread:
+            self._cleanup_thread.join(timeout=1)
+
     def get(self, model_name: str) -> Optional[LLM]:
         """Get LLM from cache if exists and not expired."""
         with self._lock:

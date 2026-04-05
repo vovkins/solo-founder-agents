@@ -35,7 +35,7 @@ def retry_on_rate_limit(max_retries: int = 3, delay: int = 60):
                     if e.status == 403 and 'rate limit' in str(e).lower():
                         if attempt < max_retries - 1:
                             logger.warning(
-                                f"Rate limit hit, waiting {delay}s before retry (attempt {attempt + 1}/{max_retries})""
+                                f"Rate limit hit, waiting {delay}s before retry (attempt {attempt + 1}/{max_retries})"""
                                 f"(attempt {attempt + 1}/{max_retries})"
                             )
                             time.sleep(delay)
@@ -265,6 +265,8 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
+    @handle_github_errors
+    @retry_on_rate_limit(max_retries=3)
     def create_branch(self, branch_name: str, base_branch: str = "main") -> str:
         """Create a new branch."""
         logger.info(f"Creating branch '{branch_name}' from '{base_branch}'")
@@ -279,6 +281,8 @@ class GitHubClient:
         logger.debug(f"Fetching branch '{branch_name}'")
         return self.repo.get_branch(branch_name)
 
+    @handle_github_errors
+    @retry_on_rate_limit(max_retries=3)
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
     def delete_branch(self, branch_name: str) -> None:
@@ -311,6 +315,8 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
+    @handle_github_errors
+    @retry_on_rate_limit(max_retries=3)
     def get_pull_request(self, pr_number: int):
         """Get a pull request by number."""
         logger.debug(f"Fetching PR #{pr_number}")
@@ -330,6 +336,8 @@ class GitHubClient:
         logger.info(f"Found {len(result)} PRs")
         return result
 
+    @handle_github_errors
+    @retry_on_rate_limit(max_retries=3)
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
     def merge_pull_request(self, pr_number: int) -> bool:

@@ -17,7 +17,9 @@ from telegram.ext import (
 )
 
 from config.settings import settings
-from src.pipeline.pipeline import Pipeline, Checkpoint; pipeline = Pipeline()
+from src.pipeline import Pipeline, Checkpoint
+
+pipeline = Pipeline()
 from src.tools.state import state_manager
 from src.tools import list_open_issues, create_github_issue
 from src.tools.artifact_tools import SaveArtifactTool
@@ -61,13 +63,17 @@ class TelegramBot:
         # Dialog state per user
         self.user_states: Dict[int, Dict[str, Any]] = {}
         
+        # Thread-safe pipeline tracking
+        self._pipeline_lock = threading.Lock()
+        
         # Active pipelines (issue_number -> thread)
         self.active_pipelines: Dict[str, threading.Thread] = {}
 
     def is_authorized(self, user_id: int) -> bool:
-        if not self.authorized_users or not self.authorized_users:
-            logger.warning(f"No authorized users configured. Allowing user {user_id}")
-            return True
+        # SECURITY: Require explicit authorization
+        if not self.authorized_users:
+            logger.error(f"SECURITY: No authorized users configured. Denying user {user_id}")
+            return False
         return user_id in self.authorized_users
 
     def get_user_state(self, user_id: int) -> Dict[str, Any]:
@@ -207,11 +213,12 @@ class TelegramBot:
             await update.message.reply_text("❌ Номер задачи должен быть числом")
             return
 
-        # Check if already running
+        # Check if already running (thread-safe)
         issue_key = str(issue_number)
-        if issue_key in self.active_pipelines and self.active_pipelines[issue_key].is_alive():
-            await update.message.reply_text(f"⏳ Задача #{issue_number} уже выполняется")
-            return
+        with self._pipeline_lock:
+            if issue_key in self.active_pipelines and self.active_pipelines[issue_key].is_alive():
+                await update.message.reply_text(f"⏳ Задача #{issue_number} уже выполняется")
+                return
 
         await update.message.reply_text(
             f"🚀 <b>Запускаю задачу #{issue_number}</b>\n\n"
@@ -322,10 +329,11 @@ class TelegramBot:
                 if issue_key in self.active_pipelines:
                     del self.active_pipelines[issue_key]
 
-        # Start thread
-        thread = threading.Thread(target=run_pipeline_thread, daemon=True)
-        self.active_pipelines[issue_key] = thread
-        thread.start()
+        # Start thread (thread-safe)
+        with self._pipeline_lock:
+            thread = threading.Thread(target=run_pipeline_thread, daemon=True)
+            self.active_pipelines[issue_key] = thread
+            thread.start()
 
     async def cancel_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Cancel current dialog."""
