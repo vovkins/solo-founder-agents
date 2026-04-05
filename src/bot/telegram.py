@@ -43,14 +43,19 @@ class TelegramBot:
         self.token = token or settings.telegram_bot_token
         self.app: Optional[Application] = None
         
-        # Auth
-        auth_users_str = os.environ.get("AUTHORIZED_USERS", "")
+        # Auth - use settings.authorized_users if available, else env var
+        auth_users_str = settings.authorized_users or os.environ.get("AUTHORIZED_USERS", "")
         self.authorized_users: List[int] = []
         if auth_users_str:
             try:
                 self.authorized_users = [int(u.strip()) for u in auth_users_str.split(",") if u.strip()]
             except ValueError:
                 logger.warning(f"Invalid AUTHORIZED_USERS format: {auth_users_str}")
+        
+        # Security check: require authorized users
+        if not self.authorized_users:
+            logger.error("SECURITY WARNING: No authorized users configured! Bot will deny all access.")
+            logger.error("Set AUTHORIZED_USERS env var or authorized_users in .env file")
         logger.info(f"Authorized users: {self.authorized_users}")
 
         # Dialog state per user
@@ -60,7 +65,7 @@ class TelegramBot:
         self.active_pipelines: Dict[str, threading.Thread] = {}
 
     def is_authorized(self, user_id: int) -> bool:
-        if not self.authorized_users:
+        if not self.authorized_users or not self.authorized_users:
             logger.warning(f"No authorized users configured. Allowing user {user_id}")
             return True
         return user_id in self.authorized_users

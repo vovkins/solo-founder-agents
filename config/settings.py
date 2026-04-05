@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     github_token: str
     github_repo: str
     telegram_bot_token: str = ""
+    authorized_users: str = ""  # Comma-separated list of Telegram user IDs
     # GitHub Configuration
     github_default_branch: str = "main"  # Can be overridden in .env
 
