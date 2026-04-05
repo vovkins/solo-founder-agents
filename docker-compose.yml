@@ -4,12 +4,9 @@ services:
   telegram-bot:
     build:
       context: .
-      dockerfile
-      args:
-        build:
-          dockerfile: ./Dockerfile
-          dockerfile: ./docker-compose.yml
-      target: telegram-bot
+      dockerfile: Dockerfile
+    container_name: sfa-telegram
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
