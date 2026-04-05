@@ -259,3 +259,11 @@ class StateManager:
 
 # Global state manager instance
 state_manager = StateManager()
+
+def get_state_manager() -> StateManager:
+    """Factory function to get a StateManager instance.
+    
+    Use this for dependency injection instead of global instance.
+    """
+    return StateManager()
+

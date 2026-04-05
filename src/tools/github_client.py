@@ -1,6 +1,6 @@
 """GitHub API client for repository operations.
 
-FIX: Added error handling and retry logic for network errors.
+FIX: Added factory function for dependency injection.
 """
 
 import logging
@@ -198,7 +198,7 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
-    def get_file(self, path: str, branch: str = settings.github_default_branch) -> ContentFile:
+    def get_file(self, path: str, branch: str = "main") -> ContentFile:
         """Get file content from repository."""
         logger.debug(f"Fetching file '{path}' from branch '{branch}'")
         return self.repo.get_contents(path, ref=branch)
@@ -210,7 +210,7 @@ class GitHubClient:
         path: str,
         content: str,
         message: str,
-        branch: str = settings.github_default_branch,
+        branch: str = "main",
     ) -> dict:
         """Create a new file in the repository."""
         logger.info(f"Creating file '{path}' on branch '{branch}'")
@@ -228,7 +228,7 @@ class GitHubClient:
         path: str,
         content: str,
         message: str,
-        branch: str = settings.github_default_branch,
+        branch: str = "main",
     ) -> dict:
         """Update an existing file."""
         logger.info(f"Updating file '{path}' on branch '{branch}'")
@@ -247,7 +247,7 @@ class GitHubClient:
         self,
         path: str,
         message: str,
-        branch: str = settings.github_default_branch,
+        branch: str = "main",
     ) -> dict:
         """Delete a file from the repository."""
         logger.info(f"Deleting file '{path}' from branch '{branch}'")
@@ -265,7 +265,7 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
-    def create_branch(self, branch_name: str, base_branch: str = settings.github_default_branch) -> str:
+    def create_branch(self, branch_name: str, base_branch: str = "main") -> str:
         """Create a new branch."""
         logger.info(f"Creating branch '{branch_name}' from '{base_branch}'")
         ref = self.repo.get_git_ref(f"heads/{base_branch}")
@@ -298,7 +298,7 @@ class GitHubClient:
         title: str,
         body: str,
         head_branch: str,
-        base_branch: str = settings.github_default_branch,
+        base_branch: str = "main",
     ):
         """Create a pull request."""
         logger.info(f"Creating PR: {title} ({head_branch} -> {base_branch})")
@@ -340,5 +340,14 @@ class GitHubClient:
         return True
 
 
-# Global client instance
+def get_github_client() -> GitHubClient:
+    """Factory function to get a GitHub client instance.
+    
+    Use this for dependency injection instead of global instance.
+    Creates a new instance each time (stateless client).
+    """
+    return GitHubClient()
+
+
+# Global client instance (DEPRECATED: use get_github_client() instead)
 github_client = GitHubClient()
