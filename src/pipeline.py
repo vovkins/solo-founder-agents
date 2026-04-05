@@ -20,15 +20,15 @@ logger = logging.getLogger(__name__)
 
 class PipelineStage(str, Enum):
     """Pipeline execution stages."""
-    REQUIREMENTS = "requirements"
-    ANALYSIS = "analysis"
-    DESIGN = "design"
-    UI_DESIGN = "ui_design"
-    IMPLEMENTATION = "implementation"
-    REVIEW = "review"
-    QA = "qa"
-    DOCUMENTATION = "documentation"
-    COMPLETE = "complete"
+    REQUIREMENTS = PipelineStage.REQUIREMENTS.value
+    ANALYSIS = PipelineStage.ANALYSIS.value
+    DESIGN = PipelineStage.DESIGN.value
+    UI_DESIGN = PipelineStage.UI_DESIGN.value
+    IMPLEMENTATION = PipelineStage.IMPLEMENTATION.value
+    REVIEW = PipelineStage.REVIEW.value
+    QA = PipelineStage.QA.value
+    DOCUMENTATION = PipelineStage.DOCUMENTATION.value
+    COMPLETE = PipelineStage.COMPLETE.value
 
 
 class Checkpoint(str, Enum):
@@ -204,12 +204,12 @@ class Pipeline:
         print("=" * 50)
 
         self._update_stage(PipelineStage.QA)
-        state_manager.update_agent_state("qa", "working", f"testing_{pr_url}")
+        state_manager.update_agent_state(PipelineStage.QA.value, "working", f"testing_{pr_url}")
 
         from src.crews import run_qa_crew
         result = run_qa_crew(pr_url)
 
-        state_manager.update_agent_state("qa", "idle")
+        state_manager.update_agent_state(PipelineStage.QA.value, "idle")
         self._update_state("qa_status", "passed")
         self._update_stage(PipelineStage.DOCUMENTATION)
 
@@ -325,9 +325,9 @@ class Pipeline:
         try:
             # Phase 1: Requirements (PM)
             if on_progress:
-                on_progress("requirements", "Собираю требования (PM)...")
+                on_progress(PipelineStage.REQUIREMENTS.value, "Собираю требования (PM)...")
             req_result = self.run_requirements_phase(founder_vision)
-            results["phases"]["requirements"] = req_result
+            results["phases"][PipelineStage.REQUIREMENTS.value] = req_result
 
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/requirements/prd.md"])
@@ -338,9 +338,9 @@ class Pipeline:
 
             # Phase 2: Analysis (Analyst)
             if on_progress:
-                on_progress("analysis", "Анализирую PRD (Analyst)...")
+                on_progress(PipelineStage.ANALYSIS.value, "Анализирую PRD (Analyst)...")
             analysis_result = self.run_analysis_phase()
-            results["phases"]["analysis"] = analysis_result
+            results["phases"][PipelineStage.ANALYSIS.value] = analysis_result
 
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/requirements/task-specs.md"])
@@ -350,9 +350,9 @@ class Pipeline:
 
             # Phase 3: Design (Architect)
             if on_progress:
-                on_progress("design", "Проектирую архитектуру (Architect)...")
+                on_progress(PipelineStage.DESIGN.value, "Проектирую архитектуру (Architect)...")
             design_result = self.run_design_phase()
-            results["phases"]["design"] = design_result
+            results["phases"][PipelineStage.DESIGN.value] = design_result
 
             if on_checkpoint:
                 on_checkpoint(Checkpoint.CHECKPOINT_3, ["docs/design/system-design.md"])
@@ -362,23 +362,23 @@ class Pipeline:
 
             # Phase 4: UI Design (Designer)
             if on_progress:
-                on_progress("ui_design", "Создаю UI спецификации (Designer)...")
+                on_progress(PipelineStage.UI_DESIGN.value, "Создаю UI спецификации (Designer)...")
             ui_result = self.run_ui_design_phase()
-            results["phases"]["ui_design"] = ui_result
+            results["phases"][PipelineStage.UI_DESIGN.value] = ui_result
 
             # Phase 5: Implementation (Developer)
             if on_progress:
-                on_progress("implementation", "Разрабатываю код (Developer)...")
+                on_progress(PipelineStage.IMPLEMENTATION.value, "Разрабатываю код (Developer)...")
             impl_result = self.run_implementation_phase(issue_number)
-            results["phases"]["implementation"] = impl_result
+            results["phases"][PipelineStage.IMPLEMENTATION.value] = impl_result
 
             pr_url = impl_result.get("pr_url")
             if pr_url:
                 # Phase 6: Review (Reviewer)
                 if on_progress:
-                    on_progress("review", "Ревью кода (Reviewer)...")
+                    on_progress(PipelineStage.REVIEW.value, "Ревью кода (Reviewer)...")
                 review_result = self.run_review_phase(pr_url)
-                results["phases"]["review"] = review_result
+                results["phases"][PipelineStage.REVIEW.value] = review_result
 
                 if on_checkpoint:
                     on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
@@ -388,15 +388,15 @@ class Pipeline:
 
                 # Phase 7: QA
                 if on_progress:
-                    on_progress("qa", "Тестирую (QA)...")
+                    on_progress(PipelineStage.QA.value, "Тестирую (QA)...")
                 qa_result = self.run_qa_phase(pr_url)
-                results["phases"]["qa"] = qa_result
+                results["phases"][PipelineStage.QA.value] = qa_result
 
             # Phase 8: Documentation (Tech Writer)
             if on_progress:
-                on_progress("documentation", "Обновляю документацию (Tech Writer)...")
+                on_progress(PipelineStage.DOCUMENTATION.value, "Обновляю документацию (Tech Writer)...")
             doc_result = self.run_documentation_phase()
-            results["phases"]["documentation"] = doc_result
+            results["phases"][PipelineStage.DOCUMENTATION.value] = doc_result
 
             # Final checkpoint
             if on_checkpoint:
@@ -404,7 +404,7 @@ class Pipeline:
                     pr_urls = self.state.get("pr_urls", [])
                 on_checkpoint(Checkpoint.CHECKPOINT_5, pr_urls)
 
-            results["status"] = "complete"
+            results["status"] = PipelineStage.COMPLETE.value
 
         except Exception as e:
             results["status"] = "error"

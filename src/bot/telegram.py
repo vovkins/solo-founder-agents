@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class DialogState(str, Enum):
     """Состояния диалога с пользователем."""
-    IDLE = "idle"
+    IDLE = PipelineStage.REQUIREMENTS.value
     COLLECTING_REQUIREMENTS = "collecting_requirements"
     CONFIRMING_PRD = "confirming_prd"
 
@@ -146,15 +146,15 @@ class TelegramBot:
         
         # Map stages to Russian
         stage_names = {
-            "idle": "💤 Ожидание",
-            "requirements": "📋 Сбор требований",
-            "analysis": "🔍 Анализ",
+            PipelineStage.REQUIREMENTS.value: "💤 Ожидание",
+            PipelineStage.REQUIREMENTS.value: "📋 Сбор требований",
+            PipelineStage.ANALYSIS.value: "🔍 Анализ",
             "architecture": "🏗️ Архитектура",
-            "design": "🎨 Дизайн",
+            PipelineStage.DESIGN.value: "🎨 Дизайн",
             "development": "💻 Разработка",
-            "review": "👀 Ревью",
+            PipelineStage.REVIEW.value: "👀 Ревью",
             "testing": "🧪 Тестирование",
-            "documentation": "📝 Документация",
+            PipelineStage.DOCUMENTATION.value: "📝 Документация",
             "completed": "✅ Завершено",
         }
         stage_display = stage_names.get(stage, stage)
@@ -294,8 +294,8 @@ class TelegramBot:
                 
                 # Send final result
                 async def send_result():
-                    if result.get("status") == "complete":
-                        pr_urls = result.get("phases", {}).get("implementation", {}).get("pr_url")
+                    if result.get("status") == PipelineStage.COMPLETE.value:
+                        pr_urls = result.get("phases", {}).get(PipelineStage.IMPLEMENTATION.value, {}).get("pr_url")
                         msg = f"✅ <b>Задача #{issue_number} завершена!</b>\n\n"
                         if pr_urls:
                             msg += f"📎 PR: {pr_urls}\n\n"
