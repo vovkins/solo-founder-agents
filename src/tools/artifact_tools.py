@@ -82,36 +82,9 @@ class SaveArtifactTool(BaseTool):
 
         artifact_type_enum = type_map[artifact_type]
 
-        # Determine file path based on agreed directory structure:
-        # artifacts/
-        #   requirements/  → PRD, backlog, personas
-        #   design/        → system-design, design-system, ui/
-        #   adr/           → Architecture Decision Records
-        #   implementation/ → PRs, branches, commits
-        #   tests/         → Unit, integration
-        from datetime import datetime
-        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-        
-        if artifact_type_enum == ArtifactType.PRD:
-            filepath = "docs/requirements/prd.md"
-        elif artifact_type_enum == ArtifactType.SYSTEM_DESIGN:
-            filepath = "docs/design/system-design.md"
-        elif artifact_type_enum == ArtifactType.ADR:
-            filepath = f"docs/adr/{name or timestamp}.md"
-        elif artifact_type_enum == ArtifactType.DESIGN_SYSTEM:
-            filepath = "docs/design/design-system.md"
-        elif artifact_type_enum == ArtifactType.UI_SCREEN:
-            filepath = f"docs/design/ui/screens/{name or timestamp}.md"
-        elif artifact_type_enum == ArtifactType.USER_FLOW:
-            filepath = f"docs/design/ui/flows/{name or timestamp}.md"
-        elif artifact_type_enum == ArtifactType.TEST_CASE:
-            filepath = f"docs/tests/{name or timestamp}-test-case.md"
-        elif artifact_type_enum == ArtifactType.TEST_RUN_LOG:
-            filepath = f"docs/tests/{name or timestamp}-run-log.md"
-        else:
-            filepath = f"docs/{name or timestamp}.md"
+        # Path is determined by artifact_manager.create_artifact()
+        # No need to compute filepath here
 
-        # Save artifact (permission check is now in artifact_manager.save_artifact)
         artifact = self.artifact_manager.create_artifact(
             artifact_type=artifact_type_enum,
             content=content,

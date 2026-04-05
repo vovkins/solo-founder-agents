@@ -69,36 +69,10 @@ def run_tech_writer_crew(*args, **kwargs):
     from .tech_writer_crew import run_tech_writer_crew as _f
     return _f(*args, **kwargs)
 
-# Legacy crews (kept for backward compatibility)
-def create_core_crew(*args, **kwargs):
-    from .core_crew import create_core_crew as _f
-    return _f(*args, **kwargs)
-
-def run_core_crew(*args, **kwargs):
-    from .core_crew import run_core_crew as _f
-    return _f(*args, **kwargs)
-
-def create_dev_crew(*args, **kwargs):
-    from .dev_crew import create_dev_crew as _f
-    return _f(*args, **kwargs)
-
-def run_dev_crew(*args, **kwargs):
-    from .dev_crew import run_dev_crew as _f
-    return _f(*args, **kwargs)
-
-def create_review_cycle_crew(*args, **kwargs):
-    from .dev_crew import create_review_cycle_crew as _f
-    return _f(*args, **kwargs)
-
-def create_qa_cycle_crew(*args, **kwargs):
-    from .dev_crew import create_qa_cycle_crew as _f
-    return _f(*args, **kwargs)
-
 
 __all__ = [
     "create_llm",
     "LLMProvider",
-    # Individual crews
     "create_pm_crew", "run_pm_crew",
     "create_analyst_crew", "run_analyst_crew",
     "create_architect_crew", "run_architect_crew",
@@ -107,9 +81,4 @@ __all__ = [
     "create_reviewer_crew", "run_reviewer_crew",
     "create_qa_crew", "run_qa_crew",
     "create_tech_writer_crew", "run_tech_writer_crew",
-    # Legacy
-    "create_core_crew", "run_core_crew",
-    "create_dev_crew", "run_dev_crew",
-    "create_review_cycle_crew",
-    "create_qa_cycle_crew",
 ]

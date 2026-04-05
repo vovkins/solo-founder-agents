@@ -5,7 +5,6 @@ from crewai import Crew, Process
 
 def create_developer_crew(
     issue_number: int,
-    task_description: str,
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the Developer agent."""
@@ -32,12 +31,12 @@ def create_developer_crew(
     )
 
 
-def run_developer_crew(issue_number: int, task_description: str) -> dict:
+def run_developer_crew(issue_number: int) -> dict:
     """Run the developer crew."""
     from src.tools.file_permissions import set_current_role
     set_current_role("developer")
 
-    crew = create_developer_crew(issue_number, task_description)
+    crew = create_developer_crew(issue_number)
     result = crew.kickoff()
 
     return {

@@ -10,11 +10,7 @@ def create_reviewer_crew(
 ) -> Crew:
     """Create a crew with only the Reviewer agent."""
     from src.agents import reviewer_agent
-    from src.tasks import (
-        create_review_pr_task,
-        create_check_standards_task,
-        create_security_check_task,
-    )
+    from src.tasks import create_review_pr_task
 
     review_pr = create_review_pr_task(pr_url, pr_description)
 

@@ -145,7 +145,7 @@ class Pipeline:
         issue = get_issue_details(issue_number)
 
         from src.crews import run_developer_crew
-        result = run_developer_crew(issue_number, issue.get("title", ""))
+        result = run_developer_crew(issue_number)
 
         if result.get("pr_url"):
             self.state["pr_urls"].append(result["pr_url"])
