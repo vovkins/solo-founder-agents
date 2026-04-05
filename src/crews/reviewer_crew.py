@@ -24,13 +24,16 @@ def create_reviewer_crew(
 
 def run_reviewer_crew(pr_url: str, pr_description: str = "") -> dict:
     """Run the reviewer crew."""
+    import logging
     from src.tools.file_permissions import set_current_role
+
+    logger = logging.getLogger(__name__)
     set_current_role("reviewer")
 
-    crew = create_reviewer_crew(pr_url, pr_description)
-    result = crew.kickoff()
-
-    return {
-        "status": "completed",
-        "result": str(result),
-    }
+    try:
+        crew = create_reviewer_crew(pr_url, pr_description)
+        result = crew.kickoff()
+        return {"status": "completed", "result": str(result)}
+    except Exception as e:
+        logger.error(f"Reviewer crew failed: {e}")
+        return {"status": "error", "error": str(e)}

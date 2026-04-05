@@ -124,7 +124,7 @@ class Pipeline:
 
         state_manager.update_agent_state("designer", "working", "creating_ui")
 
-        system_design = self.state.get("system_design_path", "data/artifacts/docs/design/system-design.md")
+        system_design = self.state.get("system_design_path", "docs/design/system-design.md")
         from src.crews import run_designer_crew
         result = run_designer_crew(system_design, task_description)
 

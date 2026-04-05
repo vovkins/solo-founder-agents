@@ -1,6 +1,7 @@
 """State management for tracking progress and context."""
 
 import json
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -22,19 +23,20 @@ class StateManager:
 
     def __init__(self):
         """Initialize state manager and load existing state."""
+        self._lock = threading.Lock()
         self.state = self._load_state()
 
     def _load_state(self) -> Dict[str, Any]:
-        """Load state from file.
+        """Load state from file (thread-safe).
 
         Returns:
             State dictionary
         """
-        ensure_state_dir()
-
-        if STATE_FILE.exists():
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+        with self._lock:
+            ensure_state_dir()
+            if STATE_FILE.exists():
+                with open(STATE_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
 
         # Default state structure
         return {
@@ -48,13 +50,12 @@ class StateManager:
         }
 
     def save_state(self) -> None:
-        """Save state to file."""
-        ensure_state_dir()
-
-        self.state["metadata"]["updated_at"] = datetime.now().isoformat()
-
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.state, f, indent=2)
+        """Save state to file (thread-safe)."""
+        with self._lock:
+            ensure_state_dir()
+            self.state["metadata"]["updated_at"] = datetime.now().isoformat()
+            with open(STATE_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.state, f, indent=2)
 
     # ===========================================
     # Task State
@@ -66,19 +67,14 @@ class StateManager:
         status: str,
         details: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Set status for a task.
-
-        Args:
-            task_id: Task identifier (e.g., GitHub issue number)
-            status: Status value (pending, in_progress, completed, blocked)
-            details: Optional additional details
-        """
-        self.state["tasks"][task_id] = {
-            "status": status,
-            "updated_at": datetime.now().isoformat(),
-            **(details or {}),
-        }
-        self.save_state()
+        """Set status for a task."""
+        with self._lock:
+            self.state["tasks"][task_id] = {
+                "status": status,
+                "updated_at": datetime.now().isoformat(),
+                **(details or {}),
+            }
+            self.save_state()
 
     def get_task_status(self, task_id: str) -> Optional[str]:
         """Get status for a task.

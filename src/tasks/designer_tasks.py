@@ -67,7 +67,7 @@ def create_design_system_task(system_design_path: str) -> Task:
            - Color contrast
            - Screen reader considerations
         
-        Save to docs/design-system.md
+        Save to docs/design/design-system.md
         """,
         expected_output="Path to the created design system document",
         agent=designer_agent,

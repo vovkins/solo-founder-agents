@@ -5,14 +5,7 @@ from config.settings import settings
 
 
 def create_llm(model: str) -> LLM:
-    """Create an LLM instance configured for OpenRouter.
-
-    Args:
-        model: Model name in OpenRouter format (e.g., 'openai/gpt-4o')
-
-    Returns:
-        Configured LLM instance
-    """
+    """Create an LLM instance configured for OpenRouter."""
     return LLM(
         model=f"openrouter/{model}",
         api_key=settings.openrouter_api_key,
@@ -20,45 +13,48 @@ def create_llm(model: str) -> LLM:
     )
 
 
+# Cache for LLM instances (model_name -> LLM)
+_llm_cache: dict = {}
+
+
+def _get_or_create_llm(model_name: str) -> LLM:
+    """Get cached LLM or create a new one."""
+    if model_name not in _llm_cache:
+        _llm_cache[model_name] = create_llm(model_name)
+    return _llm_cache[model_name]
+
+
 class LLMProvider:
-    """Provider for LLM instances by agent role."""
+    """Provider for LLM instances by agent role (cached)."""
 
     @staticmethod
     def get_pm_llm() -> LLM:
-        """Get LLM for Product Manager agent."""
-        return create_llm(settings.llm_pm)
+        return _get_or_create_llm(settings.llm_pm)
 
     @staticmethod
     def get_analyst_llm() -> LLM:
-        """Get LLM for Analyst agent."""
-        return create_llm(settings.llm_analyst)
+        return _get_or_create_llm(settings.llm_analyst)
 
     @staticmethod
     def get_architect_llm() -> LLM:
-        """Get LLM for Architect agent."""
-        return create_llm(settings.llm_architect)
+        return _get_or_create_llm(settings.llm_architect)
 
     @staticmethod
     def get_designer_llm() -> LLM:
-        """Get LLM for Designer agent."""
-        return create_llm(settings.llm_designer)
+        return _get_or_create_llm(settings.llm_designer)
 
     @staticmethod
     def get_developer_llm() -> LLM:
-        """Get LLM for Developer (Coder) agent."""
-        return create_llm(settings.llm_developer)
+        return _get_or_create_llm(settings.llm_developer)
 
     @staticmethod
     def get_reviewer_llm() -> LLM:
-        """Get LLM for Developer (Reviewer) agent."""
-        return create_llm(settings.llm_reviewer)
+        return _get_or_create_llm(settings.llm_reviewer)
 
     @staticmethod
     def get_qa_llm() -> LLM:
-        """Get LLM for QA Engineer agent."""
-        return create_llm(settings.llm_qa)
+        return _get_or_create_llm(settings.llm_qa)
 
     @staticmethod
     def get_tech_writer_llm() -> LLM:
-        """Get LLM for Tech Writer agent."""
-        return create_llm(settings.llm_tech_writer)
+        return _get_or_create_llm(settings.llm_tech_writer)

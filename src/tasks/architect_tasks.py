@@ -171,7 +171,7 @@ def create_system_design_task(
            - Environment overview
            - CI/CD considerations
         
-        Save to docs/system-design.md
+        Save to docs/design/system-design.md
         """,
         expected_output="Path to the created System Design document",
         agent=architect_agent,

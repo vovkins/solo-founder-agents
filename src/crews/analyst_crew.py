@@ -24,7 +24,7 @@ def create_analyst_crew(
     )
 
     # Create Analyst tasks
-    analyze_prd = create_analyze_prd_task("data/artifacts/docs/prd.md")
+    analyze_prd = create_analyze_prd_task("docs/requirements/prd.md")
     decompose_features = create_decompose_features_task("{{features_output}}")
     create_task_specs = create_task_specs_task("{{tasks_output}}")
     map_dependencies = create_dependency_map_task(["{{task_urls}}"])
@@ -43,23 +43,21 @@ def create_analyst_crew(
 
 
 def run_analyst_crew() -> dict:
-    """Run the Analyst crew and return results.
-
-    Returns:
-        Dictionary with results and outputs
-    """
+    """Run the Analyst crew and return results."""
+    import logging
     from src.tools.file_permissions import set_current_role
-    
-    # Set role context for file permissions
-    set_current_role("analyst")
-    
-    crew = create_analyst_crew()
-    result = crew.kickoff()
 
-    return {
-        "status": "completed",
-        "result": str(result),
-        "artifacts": {
-            "task_specs": "data/artifacts/docs/task-specs.md",
-        },
-    }
+    logger = logging.getLogger(__name__)
+    set_current_role("analyst")
+
+    try:
+        crew = create_analyst_crew()
+        result = crew.kickoff()
+        return {
+            "status": "completed",
+            "result": str(result),
+            "artifacts": {"task_specs": "docs/requirements/task-specs.md"},
+        }
+    except Exception as e:
+        logger.error(f"Analyst crew failed: {e}")
+        return {"status": "error", "error": str(e)}

@@ -25,12 +25,12 @@ def create_architect_crew(
 
     # Create Architect tasks
     analyze_requirements = create_analyze_requirements_task(
-        "data/artifacts/docs/prd.md",
+        "docs/requirements/prd.md",
         "",
     )
     design_architecture = create_design_architecture_task("{{requirements_summary}}")
     create_system_design = create_system_design_task(
-        "data/artifacts/docs/prd.md",
+        "docs/requirements/prd.md",
         "{{architecture_output}}",
     )
     create_standards = create_standards_task("{{architecture_output}}")
@@ -49,24 +49,24 @@ def create_architect_crew(
 
 
 def run_architect_crew() -> dict:
-    """Run the Architect crew and return results.
-
-    Returns:
-        Dictionary with results and outputs
-    """
+    """Run the Architect crew and return results."""
+    import logging
     from src.tools.file_permissions import set_current_role
-    
-    # Set role context for file permissions
-    set_current_role("architect")
-    
-    crew = create_architect_crew()
-    result = crew.kickoff()
 
-    return {
-        "status": "completed",
-        "result": str(result),
-        "artifacts": {
-            "system_design": "data/artifacts/docs/system-design.md",
-            "standards": "data/artifacts/docs/standards.md",
-        },
-    }
+    logger = logging.getLogger(__name__)
+    set_current_role("architect")
+
+    try:
+        crew = create_architect_crew()
+        result = crew.kickoff()
+        return {
+            "status": "completed",
+            "result": str(result),
+            "artifacts": {
+                "system_design": "docs/design/system-design.md",
+                "standards": "docs/design/standards.md",
+            },
+        }
+    except Exception as e:
+        logger.error(f"Architect crew failed: {e}")
+        return {"status": "error", "error": str(e)}

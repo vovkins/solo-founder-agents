@@ -1,11 +1,13 @@
 """QA crew for testing tasks."""
 
+from typing import List, Optional
+
 from crewai import Crew, Process
 
 
 def create_qa_crew(
     pr_url: str = "",
-    acceptance_criteria: list = None,
+    acceptance_criteria: Optional[List[str]] = None,
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the QA agent."""
@@ -31,15 +33,18 @@ def create_qa_crew(
     )
 
 
-def run_qa_crew(pr_url: str, acceptance_criteria: list = None) -> dict:
+def run_qa_crew(pr_url: str = "", acceptance_criteria: Optional[List[str]] = None) -> dict:
     """Run the QA crew."""
+    import logging
     from src.tools.file_permissions import set_current_role
+
+    logger = logging.getLogger(__name__)
     set_current_role("qa")
 
-    crew = create_qa_crew(pr_url, acceptance_criteria)
-    result = crew.kickoff()
-
-    return {
-        "status": "completed",
-        "result": str(result),
-    }
+    try:
+        crew = create_qa_crew(pr_url, acceptance_criteria)
+        result = crew.kickoff()
+        return {"status": "completed", "result": str(result)}
+    except Exception as e:
+        logger.error(f"QA crew failed: {e}")
+        return {"status": "error", "error": str(e)}

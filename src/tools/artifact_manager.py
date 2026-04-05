@@ -160,17 +160,24 @@ class ArtifactManager:
         if self.github_sync:
             message = commit_message or f"docs: Update {artifact.path}"
             try:
-                # Check if file exists
+                # Check if file exists (catch only file-not-found, not all errors)
+                existing_content = None
                 try:
-                    read_file_from_repo(artifact.path, self.branch)
+                    existing_content = read_file_from_repo(artifact.path, self.branch)
+                except FileNotFoundError:
+                    pass  # File doesn't exist yet — will create below
+                except Exception as e:
+                    # Log unexpected error but don't silently fall through to create
+                    logger.warning(f"Unexpected error reading {artifact.path}: {e}")
+
+                if existing_content is not None:
                     url = update_file_in_repo(
                         path=artifact.path,
                         content=artifact.content,
                         message=message,
                         branch=self.branch,
                     )
-                except Exception:
-                    # File doesn't exist, create it
+                else:
                     url = create_file_in_repo(
                         path=artifact.path,
                         content=artifact.content,
@@ -179,7 +186,7 @@ class ArtifactManager:
                     )
                 return url
             except Exception as e:
-                print(f"Warning: Failed to sync to GitHub: {e}")
+                logger.warning(f"Failed to sync to GitHub: {e}")
                 return str(local_path)
 
         return str(local_path)

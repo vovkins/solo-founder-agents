@@ -154,6 +154,7 @@ def run(issue_number, interactive):
     if interactive:
         console.print("\n[yellow]Interactive mode enabled[/yellow]")
         console.print("Pipeline will pause at checkpoints for your review.\n")
+        pipeline.interactive = True
 
     # Run implementation phase
     with Progress(

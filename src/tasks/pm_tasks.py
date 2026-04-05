@@ -58,9 +58,9 @@ def create_prd_task(requirements: str) -> Task:
         - Success criteria
         - Out of scope items
         
-        Save the PRD to docs/prd.md
+        Save the PRD to docs/requirements/prd.md
         """,
-        expected_output="Path to the created PRD document (docs/prd.md)",
+        expected_output="Path to the created PRD document (docs/requirements/prd.md)",
         agent=pm_agent,
     )
 

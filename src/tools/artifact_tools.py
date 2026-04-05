@@ -163,13 +163,6 @@ class SyncArtifactsTool(BaseTool):
         return f"Synced {len(results['synced'])} artifacts. Errors: {len(results['errors'])}"
 
 
-# Export tools for use in agents
-ARTIFACT_TOOLS = [
-    SaveArtifactTool(),
-    ReadArtifactTool(),
-    SyncArtifactsTool(),
-]
-
 
 class ListMyFilesInput(BaseModel):
     """Input schema for ListMyFilesTool."""

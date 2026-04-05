@@ -45,26 +45,21 @@ def create_pm_crew(
 
 
 def run_pm_crew(founder_vision: str) -> dict:
-    """Run the PM crew and return results.
-
-    Args:
-        founder_vision: Initial product vision from founder
-
-    Returns:
-        Dictionary with results and outputs
-    """
+    """Run the PM crew and return results."""
+    import logging
     from src.tools.file_permissions import set_current_role
-    
-    # Set role context for file permissions
-    set_current_role("pm")
-    
-    crew = create_pm_crew(founder_vision)
-    result = crew.kickoff()
 
-    return {
-        "status": "completed",
-        "result": str(result),
-        "artifacts": {
-            "prd": "data/artifacts/docs/prd.md",
-        },
-    }
+    logger = logging.getLogger(__name__)
+    set_current_role("pm")
+
+    try:
+        crew = create_pm_crew(founder_vision)
+        result = crew.kickoff()
+        return {
+            "status": "completed",
+            "result": str(result),
+            "artifacts": {"prd": "docs/requirements/prd.md"},
+        }
+    except Exception as e:
+        logger.error(f"PM crew failed: {e}")
+        return {"status": "error", "error": str(e)}

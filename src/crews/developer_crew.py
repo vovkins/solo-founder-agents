@@ -33,14 +33,16 @@ def create_developer_crew(
 
 def run_developer_crew(issue_number: int) -> dict:
     """Run the developer crew."""
+    import logging
     from src.tools.file_permissions import set_current_role
+
+    logger = logging.getLogger(__name__)
     set_current_role("developer")
 
-    crew = create_developer_crew(issue_number)
-    result = crew.kickoff()
-
-    return {
-        "status": "completed",
-        "result": str(result),
-        "issue_number": issue_number,
-    }
+    try:
+        crew = create_developer_crew(issue_number)
+        result = crew.kickoff()
+        return {"status": "completed", "result": str(result), "issue_number": issue_number}
+    except Exception as e:
+        logger.error(f"Developer crew failed: {e}")
+        return {"status": "error", "error": str(e), "issue_number": issue_number}

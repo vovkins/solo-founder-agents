@@ -31,13 +31,16 @@ def run_tech_writer_crew(
     project_description: str = "",
 ) -> dict:
     """Run the tech writer crew."""
+    import logging
     from src.tools.file_permissions import set_current_role
+
+    logger = logging.getLogger(__name__)
     set_current_role("tech_writer")
 
-    crew = create_tech_writer_crew(project_name, project_description)
-    result = crew.kickoff()
-
-    return {
-        "status": "completed",
-        "result": str(result),
-    }
+    try:
+        crew = create_tech_writer_crew(project_name, project_description)
+        result = crew.kickoff()
+        return {"status": "completed", "result": str(result)}
+    except Exception as e:
+        logger.error(f"Tech Writer crew failed: {e}")
+        return {"status": "error", "error": str(e)}

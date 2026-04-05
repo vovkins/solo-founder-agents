@@ -4,7 +4,7 @@ from crewai import Crew, Process
 
 
 def create_designer_crew(
-    system_design_path: str = "data/artifacts/docs/design/system-design.md",
+    system_design_path: str = "docs/design/system-design.md",
     task_description: str = "",
     verbose: bool = True,
 ) -> Crew:
@@ -27,17 +27,20 @@ def create_designer_crew(
 
 
 def run_designer_crew(
-    system_design_path: str = "data/artifacts/docs/design/system-design.md",
+    system_design_path: str = "docs/design/system-design.md",
     task_description: str = "",
 ) -> dict:
     """Run the designer crew."""
+    import logging
     from src.tools.file_permissions import set_current_role
+
+    logger = logging.getLogger(__name__)
     set_current_role("designer")
 
-    crew = create_designer_crew(system_design_path, task_description)
-    result = crew.kickoff()
-
-    return {
-        "status": "completed",
-        "result": str(result),
-    }
+    try:
+        crew = create_designer_crew(system_design_path, task_description)
+        result = crew.kickoff()
+        return {"status": "completed", "result": str(result)}
+    except Exception as e:
+        logger.error(f"Designer crew failed: {e}")
+        return {"status": "error", "error": str(e)}

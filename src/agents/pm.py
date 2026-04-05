@@ -3,12 +3,7 @@
 from crewai import Agent
 
 from src.crews.base import LLMProvider
-from src.tools import (
-    get_artifact_tools,
-    get_issue_details,
-    list_open_issues,
-    create_github_issue,
-)
+from src.tools import get_artifact_tools
 from src.tools.github_tools import (
     create_github_issue_tool,
     list_open_issues_tool,
