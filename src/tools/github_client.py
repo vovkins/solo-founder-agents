@@ -35,7 +35,7 @@ def retry_on_rate_limit(max_retries: int = 3, delay: int = 60):
                     if e.status == 403 and 'rate limit' in str(e).lower():
                         if attempt < max_retries - 1:
                             logger.warning(
-                                f"Rate limit hit, waiting {delay}s before retry ""
+                                f"Rate limit hit, waiting {delay}s before retry (attempt {attempt + 1}/{max_retries})""
                                 f"(attempt {attempt + 1}/{max_retries})"
                             )
                             time.sleep(delay)
