@@ -8,7 +8,8 @@ def create_developer_crew(
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the Developer agent."""
-    from src.agents import developer_agent
+    from src.agents import get_developer_agent
+    developer_agent = get_developer_agent()
     from src.tasks import (
         create_analyze_task_task,
         create_feature_branch_task,

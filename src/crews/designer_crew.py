@@ -9,7 +9,8 @@ def create_designer_crew(
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the Designer agent."""
-    from src.agents import designer_agent
+    from src.agents import get_designer_agent
+    designer_agent = get_designer_agent()
     from src.tasks import (
         create_design_system_task,
         create_ui_screen_task,

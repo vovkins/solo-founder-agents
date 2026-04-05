@@ -9,7 +9,8 @@ def create_tech_writer_crew(
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the Tech Writer agent."""
-    from src.agents import tech_writer_agent
+    from src.agents import get_tech_writer_agent
+    tech_writer_agent = get_tech_writer_agent()
     from src.tasks import (
         create_readme_task,
         create_changelog_task,

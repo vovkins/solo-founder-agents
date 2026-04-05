@@ -17,7 +17,8 @@ def create_pm_crew(
     Returns:
         Configured Crew instance
     """
-    from src.agents import pm_agent
+    from src.agents import get_pm_agent
+    pm_agent = get_pm_agent()
     from src.tasks import (
         create_collect_requirements_task,
         create_prd_task,

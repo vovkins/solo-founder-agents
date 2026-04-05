@@ -11,7 +11,8 @@ def create_qa_crew(
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the QA agent."""
-    from src.agents import qa_agent
+    from src.agents import get_qa_agent
+    qa_agent = get_qa_agent()
     from src.tasks import (
         create_test_plan_task,
         create_e2e_tests_task,

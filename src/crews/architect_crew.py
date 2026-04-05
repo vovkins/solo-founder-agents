@@ -15,7 +15,8 @@ def create_architect_crew(
     Returns:
         Configured Crew instance
     """
-    from src.agents import architect_agent
+    from src.agents import get_architect_agent
+    architect_agent = get_architect_agent()
     from src.tasks import (
         create_analyze_requirements_task,
         create_design_architecture_task,

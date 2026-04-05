@@ -9,7 +9,8 @@ def create_reviewer_crew(
     verbose: bool = True,
 ) -> Crew:
     """Create a crew with only the Reviewer agent."""
-    from src.agents import reviewer_agent
+    from src.agents import get_reviewer_agent
+    reviewer_agent = get_reviewer_agent()
     from src.tasks import create_review_pr_task
 
     review_pr = create_review_pr_task(pr_url, pr_description)

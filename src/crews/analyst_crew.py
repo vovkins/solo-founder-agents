@@ -15,7 +15,8 @@ def create_analyst_crew(
     Returns:
         Configured Crew instance
     """
-    from src.agents import analyst_agent
+    from src.agents import get_analyst_agent
+    analyst_agent = get_analyst_agent()
     from src.tasks import (
         create_analyze_prd_task,
         create_decompose_features_task,
