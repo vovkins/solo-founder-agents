@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Developer crew for implementing features."""
 
 from crewai import Crew, Process
@@ -32,7 +33,7 @@ def create_developer_crew(
     )
 
 
-def run_developer_crew(issue_number: int) -> dict:
+def run_developer_crew(issue_number: int) -> CrewResult:
     """Run the developer crew."""
     import logging
     from src.tools.file_permissions import set_current_role

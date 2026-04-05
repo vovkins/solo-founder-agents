@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Designer crew for UI/UX design tasks."""
 
 from crewai import Crew, Process
@@ -30,7 +31,7 @@ def create_designer_crew(
 def run_designer_crew(
     system_design_path: str = "docs/design/system-design.md",
     task_description: str = "",
-) -> dict:
+) -> CrewResult:
     """Run the designer crew."""
     import logging
     from src.tools.file_permissions import set_current_role

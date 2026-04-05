@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Architect crew for system design and architecture."""
 
 from typing import Optional
@@ -49,7 +50,7 @@ def create_architect_crew(
     )
 
 
-def run_architect_crew() -> dict:
+def run_architect_crew() -> CrewResult:
     """Run the Architect crew and return results."""
     import logging
     from src.tools.file_permissions import set_current_role

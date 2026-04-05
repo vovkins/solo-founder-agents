@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Tech Writer crew for documentation tasks."""
 
 from crewai import Crew, Process
@@ -30,7 +31,7 @@ def create_tech_writer_crew(
 def run_tech_writer_crew(
     project_name: str = "Project",
     project_description: str = "",
-) -> dict:
+) -> CrewResult:
     """Run the tech writer crew."""
     import logging
     from src.tools.file_permissions import set_current_role

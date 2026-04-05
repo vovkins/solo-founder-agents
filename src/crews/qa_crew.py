@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """QA crew for testing tasks."""
 
 from typing import List, Optional
@@ -34,7 +35,7 @@ def create_qa_crew(
     )
 
 
-def run_qa_crew(pr_url: str = "", acceptance_criteria: Optional[List[str]] = None) -> dict:
+def run_qa_crew(pr_url: str = "", acceptance_criteria: Optional[List[str]] = None) -> CrewResult:
     """Run the QA crew."""
     import logging
     from src.tools.file_permissions import set_current_role

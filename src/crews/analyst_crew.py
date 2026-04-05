@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Analyst crew for feature decomposition and task specs."""
 
 from typing import Optional
@@ -43,7 +44,7 @@ def create_analyst_crew(
     )
 
 
-def run_analyst_crew() -> dict:
+def run_analyst_crew() -> CrewResult:
     """Run the Analyst crew and return results."""
     import logging
     from src.tools.file_permissions import set_current_role

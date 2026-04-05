@@ -1,3 +1,4 @@
+from src.crews.types import CrewResult
 """Reviewer crew for code review tasks."""
 
 from crewai import Crew, Process
@@ -23,7 +24,7 @@ def create_reviewer_crew(
     )
 
 
-def run_reviewer_crew(pr_url: str, pr_description: str = "") -> dict:
+def run_reviewer_crew(pr_url: str, pr_description: str = "") -> CrewResult:
     """Run the reviewer crew."""
     import logging
     from src.tools.file_permissions import set_current_role
