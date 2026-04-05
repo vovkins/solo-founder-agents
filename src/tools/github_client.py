@@ -198,7 +198,7 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
-    def get_file(self, path: str, branch: str = "main") -> ContentFile:
+    def get_file(self, path: str, branch: str = settings.github_default_branch) -> ContentFile:
         """Get file content from repository."""
         logger.debug(f"Fetching file '{path}' from branch '{branch}'")
         return self.repo.get_contents(path, ref=branch)
@@ -210,7 +210,7 @@ class GitHubClient:
         path: str,
         content: str,
         message: str,
-        branch: str = "main",
+        branch: str = settings.github_default_branch,
     ) -> dict:
         """Create a new file in the repository."""
         logger.info(f"Creating file '{path}' on branch '{branch}'")
@@ -228,7 +228,7 @@ class GitHubClient:
         path: str,
         content: str,
         message: str,
-        branch: str = "main",
+        branch: str = settings.github_default_branch,
     ) -> dict:
         """Update an existing file."""
         logger.info(f"Updating file '{path}' on branch '{branch}'")
@@ -247,7 +247,7 @@ class GitHubClient:
         self,
         path: str,
         message: str,
-        branch: str = "main",
+        branch: str = settings.github_default_branch,
     ) -> dict:
         """Delete a file from the repository."""
         logger.info(f"Deleting file '{path}' from branch '{branch}'")
@@ -265,7 +265,7 @@ class GitHubClient:
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
-    def create_branch(self, branch_name: str, base_branch: str = "main") -> str:
+    def create_branch(self, branch_name: str, base_branch: str = settings.github_default_branch) -> str:
         """Create a new branch."""
         logger.info(f"Creating branch '{branch_name}' from '{base_branch}'")
         ref = self.repo.get_git_ref(f"heads/{base_branch}")
@@ -298,7 +298,7 @@ class GitHubClient:
         title: str,
         body: str,
         head_branch: str,
-        base_branch: str = "main",
+        base_branch: str = settings.github_default_branch,
     ):
         """Create a pull request."""
         logger.info(f"Creating PR: {title} ({head_branch} -> {base_branch})")

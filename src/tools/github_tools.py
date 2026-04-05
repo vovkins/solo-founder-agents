@@ -135,7 +135,7 @@ def list_open_issues(labels: Optional[List[str]] = None) -> List[dict]:
 # ===========================================
 
 
-def read_file_from_repo(path: str, branch: str = "main") -> str:
+def read_file_from_repo(path: str, branch: str = settings.github_default_branch) -> str:
     """Read a file from the repository.
 
     Args:
@@ -153,7 +153,7 @@ def create_file_in_repo(
     path: str,
     content: str,
     message: str,
-    branch: str = "main",
+    branch: str = settings.github_default_branch,
 ) -> str:
     """Create a new file in the repository.
 
@@ -174,7 +174,7 @@ def update_file_in_repo(
     path: str,
     content: str,
     message: str,
-    branch: str = "main",
+    branch: str = settings.github_default_branch,
 ) -> str:
     """Update an existing file in the repository.
 
@@ -200,7 +200,7 @@ def create_pull_request(
     title: str,
     body: str,
     head_branch: str,
-    base_branch: str = "main",
+    base_branch: str = settings.github_default_branch,
 ) -> str:
     """Create a pull request.
 
@@ -239,7 +239,7 @@ class CreatePullRequestToolInput(BaseModel):
     title: str = Field(description="PR title")
     body: str = Field(description="PR description")
     head_branch: str = Field(description="Head branch name")
-    base_branch: str = Field(default="main", description="Base branch name")
+    base_branch: str = Field(default=settings.github_default_branch, description="Base branch name")
 
 
 # ===========================================
@@ -285,7 +285,7 @@ class CreatePullRequestTool(BaseTool):
         title: str,
         body: str,
         head_branch: str,
-        base_branch: str = "main",
+        base_branch: str = settings.github_default_branch,
     ) -> str:
         """Create a Pull Request.
 

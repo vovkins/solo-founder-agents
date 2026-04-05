@@ -80,7 +80,7 @@ class ArtifactManager:
         self,
         local_dir: str = "data/artifacts",
         github_sync: bool = True,
-        branch: str = "main",
+        branch: str = settings.github_default_branch,
     ):
         """Initialize ArtifactManager.
 

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     github_token: str
     github_repo: str
     telegram_bot_token: str = ""
+    # GitHub Configuration
+    github_default_branch: str = "main"  # Can be overridden in .env
 
     # LLM Models per Agent (OpenRouter format)
     # All roles use z-ai/glm-5, except Reviewer uses different model
