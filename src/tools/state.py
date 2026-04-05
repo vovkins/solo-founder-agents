@@ -1,4 +1,7 @@
-"""State management for tracking progress and context."""
+"""State management for tracking progress and context.
+
+FIX: Changed Lock to RLock to prevent deadlocks in nested calls.
+"""
 
 import json
 import threading
@@ -19,11 +22,15 @@ def ensure_state_dir() -> None:
 
 
 class StateManager:
-    """Manager for application state."""
+    """Manager for application state.
+    
+    Thread-safe: Uses RLock (reentrant lock) to allow nested calls
+    from the same thread (e.g., _load_state() -> save_state()).
+    """
 
     def __init__(self):
         """Initialize state manager and load existing state."""
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # Reentrant lock to prevent deadlocks
         self.state = self._load_state()
 
     def _load_state(self) -> Dict[str, Any]:
@@ -35,8 +42,14 @@ class StateManager:
         with self._lock:
             ensure_state_dir()
             if STATE_FILE.exists():
-                with open(STATE_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                try:
+                    with open(STATE_FILE, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except (json.JSONDecodeError, IOError) as e:
+                    # If file is corrupted, return default state
+                    import logging
+                    logging.warning(f"Failed to load state file: {e}. Using default state.")
+                    pass
 
         # Default state structure
         return {
@@ -54,8 +67,13 @@ class StateManager:
         with self._lock:
             ensure_state_dir()
             self.state["metadata"]["updated_at"] = datetime.now().isoformat()
-            with open(STATE_FILE, "w", encoding="utf-8") as f:
-                json.dump(self.state, f, indent=2)
+            try:
+                with open(STATE_FILE, "w", encoding="utf-8") as f:
+                    json.dump(self.state, f, indent=2)
+            except IOError as e:
+                import logging
+                logging.error(f"Failed to save state file: {e}")
+                raise
 
     # ===========================================
     # Task State
@@ -85,7 +103,8 @@ class StateManager:
         Returns:
             Status string or None if not found
         """
-        return self.state["tasks"].get(task_id, {}).get("status")
+        with self._lock:
+            return self.state["tasks"].get(task_id, {}).get("status")
 
     def get_task_details(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Get full details for a task.
@@ -96,7 +115,8 @@ class StateManager:
         Returns:
             Task details dictionary or None
         """
-        return self.state["tasks"].get(task_id)
+        with self._lock:
+            return self.state["tasks"].get(task_id)
 
     def list_tasks_by_status(self, status: str) -> List[str]:
         """List all tasks with a specific status.
@@ -107,11 +127,12 @@ class StateManager:
         Returns:
             List of task IDs
         """
-        return [
-            task_id
-            for task_id, task_data in self.state["tasks"].items()
-            if task_data.get("status") == status
-        ]
+        with self._lock:
+            return [
+                task_id
+                for task_id, task_data in self.state["tasks"].items()
+                if task_data.get("status") == status
+            ]
 
     # ===========================================
     # Checkpoint State
@@ -132,13 +153,14 @@ class StateManager:
             artifacts: List of artifact paths to review
             notes: Optional notes
         """
-        self.state["checkpoints"][checkpoint_id] = {
-            "status": status,
-            "artifacts": artifacts or [],
-            "notes": notes,
-            "updated_at": datetime.now().isoformat(),
-        }
-        self.save_state()
+        with self._lock:
+            self.state["checkpoints"][checkpoint_id] = {
+                "status": status,
+                "artifacts": artifacts or [],
+                "notes": notes,
+                "updated_at": datetime.now().isoformat(),
+            }
+            self.save_state()
 
     def get_checkpoint(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:
         """Get checkpoint details.
@@ -149,7 +171,8 @@ class StateManager:
         Returns:
             Checkpoint details or None
         """
-        return self.state["checkpoints"].get(checkpoint_id)
+        with self._lock:
+            return self.state["checkpoints"].get(checkpoint_id)
 
     def approve_checkpoint(self, checkpoint_id: str, notes: Optional[str] = None) -> None:
         """Approve a checkpoint.
@@ -186,12 +209,13 @@ class StateManager:
             status: Status (idle, working, error)
             current_task: Current task ID if working
         """
-        self.state["agents"][agent_name] = {
-            "status": status,
-            "current_task": current_task,
-            "updated_at": datetime.now().isoformat(),
-        }
-        self.save_state()
+        with self._lock:
+            self.state["agents"][agent_name] = {
+                "status": status,
+                "current_task": current_task,
+                "updated_at": datetime.now().isoformat(),
+            }
+            self.save_state()
 
     def get_agent_state(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """Get agent state.
@@ -202,7 +226,8 @@ class StateManager:
         Returns:
             Agent state dictionary or None
         """
-        return self.state["agents"].get(agent_name)
+        with self._lock:
+            return self.state["agents"].get(agent_name)
 
     # ===========================================
     # General State
@@ -214,20 +239,22 @@ class StateManager:
         Returns:
             Full state dictionary
         """
-        return self.state.copy()
+        with self._lock:
+            return self.state.copy()
 
     def clear_state(self) -> None:
         """Clear all state."""
-        self.state = {
-            "tasks": {},
-            "checkpoints": {},
-            "agents": {},
-            "metadata": {
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            },
-        }
-        self.save_state()
+        with self._lock:
+            self.state = {
+                "tasks": {},
+                "checkpoints": {},
+                "agents": {},
+                "metadata": {
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                },
+            }
+            self.save_state()
 
 
 # Global state manager instance
