@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from typing import Optional, Any
 
 from .github_tools import create_file_in_repo, read_file_from_repo, update_file_in_repo
 
@@ -76,7 +77,7 @@ class ArtifactManager:
         artifacts = manager.list_artifacts(ArtifactType.DESIGN_SYSTEM)
     """
 
-    def __init__(
+    def __init__(self) -> None:(
         self,
         local_dir: str = "data/artifacts",
         github_sync: bool = True,
@@ -98,7 +99,7 @@ class ArtifactManager:
         """Ensure local directory exists."""
         self.local_dir.mkdir(parents=True, exist_ok=True)
 
-    def save_artifact(
+    def save_artifact(self, artifact: Artifact, commit_message: Optional[str] = None) -> str:(
         self,
         artifact: Artifact,
         commit_message: Optional[str] = None,
