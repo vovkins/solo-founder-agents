@@ -1,7 +1,18 @@
-"""CrewAI base configuration and utilities."""
+"""CrewAI base configuration and utilities.
+
+FIX: Added TTL and LRU eviction to LLM cache to prevent memory leaks.
+"""
+
+import logging
+import threading
+import time
+from collections import OrderedDict
+from typing import Optional
 
 from crewai import LLM
 from config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 def create_llm(model: str) -> LLM:
@@ -13,19 +24,90 @@ def create_llm(model: str) -> LLM:
     )
 
 
-# Cache for LLM instances (model_name -> LLM)
-_llm_cache: dict = {}
+class LRUCache:
+    """Thread-safe LRU cache with TTL support.
+    
+    Args:
+        max_size: Maximum number of items in cache
+        ttl_seconds: Time-to-live in seconds (0 = no TTL)
+    """
+    
+    def __init__(self, max_size: int = 10, ttl_seconds: int = 3600):
+        self.max_size = max_size
+        self.ttl_seconds = ttl_seconds
+        self._lock = threading.Lock()
+        self._cache: OrderedDict = OrderedDict()  # model_name -> (LLM, timestamp)
+    
+    def get(self, model_name: str) -> Optional[LLM]:
+        """Get LLM from cache if exists and not expired."""
+        with self._lock:
+            if model_name not in self._cache:
+                return None
+            
+            llm, timestamp = self._cache[model_name]
+            
+            # Check TTL
+            if self.ttl_seconds > 0:
+                age = time.time() - timestamp
+                if age > self.ttl_seconds:
+                    logger.info(f"LLM cache entry expired: {model_name} (age: {age:.0f}s)")
+                    del self._cache[model_name]
+                    return None
+            
+            # Move to end (most recently used)
+            self._cache.move_to_end(model_name)
+            return llm
+    
+    def set(self, model_name: str, llm: LLM) -> None:
+        """Add LLM to cache with timestamp."""
+        with self._lock:
+            # Remove if exists (to update timestamp)
+            if model_name in self._cache:
+                del self._cache[model_name]
+            
+            # Add to cache
+            self._cache[model_name] = (llm, time.time())
+            
+            # Evict oldest if over max size
+            while len(self._cache) > self.max_size:
+                oldest_key = next(iter(self._cache))
+                logger.info(f"LLM cache evicting: {oldest_key}")
+                del self._cache[oldest_key]
+    
+    def clear(self) -> None:
+        """Clear all cached entries."""
+        with self._lock:
+            self._cache.clear()
+            logger.info("LLM cache cleared")
+    
+    def size(self) -> int:
+        """Get current cache size."""
+        with self._lock:
+            return len(self._cache)
+
+
+# Global LLM cache with TTL (1 hour) and max 10 models
+_llm_cache = LRUCache(max_size=10, ttl_seconds=3600)
 
 
 def _get_or_create_llm(model_name: str) -> LLM:
-    """Get cached LLM or create a new one."""
-    if model_name not in _llm_cache:
-        _llm_cache[model_name] = create_llm(model_name)
-    return _llm_cache[model_name]
+    """Get cached LLM or create a new one.
+    
+    Cache has TTL of 1 hour and max size of 10 models.
+    Eviction policy: LRU (least recently used).
+    """
+    llm = _llm_cache.get(model_name)
+    if llm is None:
+        logger.debug(f"Creating new LLM instance: {model_name}")
+        llm = create_llm(model_name)
+        _llm_cache.set(model_name, llm)
+    else:
+        logger.debug(f"Using cached LLM instance: {model_name}")
+    return llm
 
 
 class LLMProvider:
-    """Provider for LLM instances by agent role (cached)."""
+    """Provider for LLM instances by agent role (cached with TTL)."""
 
     @staticmethod
     def get_pm_llm() -> LLM:
@@ -58,3 +140,13 @@ class LLMProvider:
     @staticmethod
     def get_tech_writer_llm() -> LLM:
         return _get_or_create_llm(settings.llm_tech_writer)
+    
+    @staticmethod
+    def clear_cache() -> None:
+        """Clear the LLM cache manually."""
+        _llm_cache.clear()
+    
+    @staticmethod
+    def cache_size() -> int:
+        """Get current cache size."""
+        return _llm_cache.size()
