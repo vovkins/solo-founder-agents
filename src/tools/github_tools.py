@@ -5,6 +5,7 @@ from typing import List, Optional
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from config.settings import settings
 from .github_client import github_client
 
 
