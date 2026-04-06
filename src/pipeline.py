@@ -82,7 +82,14 @@ class Pipeline:
     # =========================================================================
 
     def run_requirements_phase(self, founder_vision: str) -> dict:
-        """Phase 1: PM agent collects requirements and creates PRD."""
+        """Run requirements gathering phase (PM crew).
+
+        Args:
+            founder_vision: Product vision from founder
+
+        Returns:
+            Dict with status, result, and artifacts (PRD path)
+        """
         print("\n" + "=" * 50)
         print("📋 PHASE: Requirements (PM)")
         print("=" * 50)
