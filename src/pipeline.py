@@ -28,7 +28,7 @@ class PipelineStage(str, Enum):
     REVIEW = "review"
     QA = "qa"
     DOCUMENTATION = "documentation"
-    COMPLETE = PipelineStage.COMPLETE.value
+    COMPLETE = "complete"
 
 
 class Checkpoint(str, Enum):
@@ -420,7 +420,7 @@ class Pipeline:
                     pr_urls = self.state.get("pr_urls", [])
                 on_checkpoint(Checkpoint.CHECKPOINT_5, pr_urls)
 
-            results["status"] = PipelineStage.COMPLETE.value
+            results["status"] = "complete"
 
         except Exception as e:
             results["status"] = "error"
