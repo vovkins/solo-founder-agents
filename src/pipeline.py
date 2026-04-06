@@ -40,6 +40,15 @@ class Checkpoint(str, Enum):
     CHECKPOINT_5 = "checkpoint_5"  # After QA — Final Release
 
 
+
+class CheckpointStatus(str, Enum):
+    """Checkpoint status values."""
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    TIMEOUT = "timeout"
+
+
 class Pipeline:
     """Pipeline orchestrator for agent execution.
 
