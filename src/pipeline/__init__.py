@@ -1,5 +1,6 @@
 """Pipeline modules for orchestration."""
 
-from .runner import PipelineRunner
+# PipelineRunner removed - not used
+# All pipeline functionality is in src.pipeline module directly
 
-__all__ = ["PipelineRunner"]
+__all__ = []
