@@ -257,13 +257,29 @@ class StateManager:
             self.save_state()
 
 
-# Global state manager instance
-state_manager = StateManager()
+# Singleton state manager instance (lazy initialization)
+_state_manager: Optional[StateManager] = None
+_state_lock = threading.Lock()
+
 
 def get_state_manager() -> StateManager:
-    """Factory function to get a StateManager instance.
-    
-    Use this for dependency injection instead of global instance.
+    """Get StateManager singleton (thread-safe).
+
+    Uses double-check locking pattern for thread-safe lazy initialization.
+    Returns the same StateManager instance on every call.
+
+    Returns:
+        StateManager singleton instance
     """
-    return StateManager()
+    global _state_manager
+    if _state_manager is None:
+        with _state_lock:
+            if _state_manager is None:  # Double-check locking
+                _state_manager = StateManager()
+    return _state_manager
+
+
+# Backward compatibility: global instance (deprecated)
+# TODO: Remove in next major version
+state_manager = get_state_manager()
 

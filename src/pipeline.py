@@ -49,7 +49,7 @@ class Pipeline:
     Thread-safe: Each instance has its own state.
     """
 
-    def __init__(self) -> None:(self, verbose: bool = True):
+    def __init__(self, verbose: bool = True) -> None:
         self.verbose = verbose
         self.current_stage = PipelineStage.REQUIREMENTS
         self.state = {
@@ -61,17 +61,17 @@ class Pipeline:
         }
         self._lock = threading.Lock()  # For thread-safe state updates
 
-    def _update_stage(self, new_stage: PipelineStage) -> None:(self, new_stage: PipelineStage) -> None:
+    def _update_stage(self, new_stage: PipelineStage) -> None:
         """Thread-safe stage update."""
         with self._lock:
             self.current_stage = new_stage
 
-    def _update_state(self, key: str, value: Any) -> None:(self, key: str, value: Any) -> None:
+    def _update_state(self, key: str, value: Any) -> None:
         """Thread-safe state update."""
         with self._lock:
             self.state[key] = value
 
-    def _append_state(self, key: str, value: Any) -> None:(self, key: str, value: Any) -> None:
+    def _append_state(self, key: str, value: Any) -> None:
         """Thread-safe append to state list."""
         with self._lock:
             if key in self.state and isinstance(self.state[key], list):
@@ -412,6 +412,30 @@ class Pipeline:
             logger.error(f"Pipeline error: {e}", exc_info=True)
 
         return results
+
+
+# Singleton pipeline instance (lazy initialization)
+_pipeline: Optional[Pipeline] = None
+_pipeline_lock = threading.Lock()
+
+
+def get_pipeline(verbose: bool = True) -> Pipeline:
+    """Get Pipeline singleton (thread-safe).
+
+    Uses double-check locking pattern for thread-safe lazy initialization.
+    Returns the same Pipeline instance on every call.
+
+    Use this when you need shared state across the application.
+
+    Returns:
+        Pipeline singleton instance
+    """
+    global _pipeline
+    if _pipeline is None:
+        with _pipeline_lock:
+            if _pipeline is None:  # Double-check locking
+                _pipeline = Pipeline(verbose=verbose)
+    return _pipeline
 
 
 def create_pipeline(verbose: bool = True) -> Pipeline:
