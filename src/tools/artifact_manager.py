@@ -76,13 +76,12 @@ class ArtifactManager:
         # List artifacts
         artifacts = manager.list_artifacts(ArtifactType.DESIGN_SYSTEM)
     """
-
-    def __init__(self) -> None:(
+    def __init__(
         self,
         local_dir: str = "data/artifacts",
         github_sync: bool = True,
         branch: str = settings.github_default_branch,
-    ):
+    ) -> None:
         """Initialize ArtifactManager.
 
         Args:
@@ -99,7 +98,7 @@ class ArtifactManager:
         """Ensure local directory exists."""
         self.local_dir.mkdir(parents=True, exist_ok=True)
 
-    def save_artifact(self, artifact: Artifact, commit_message: Optional[str] = None) -> str:(
+    def save_artifact(
         self,
         artifact: Artifact,
         commit_message: Optional[str] = None,
