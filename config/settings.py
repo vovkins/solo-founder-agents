@@ -1,41 +1,44 @@
-"""Configuration management using pydantic-settings."""
-from pydantic import validator
+"""Settings configuration for solo-founder-agents."""
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseSettings, Field, validator
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+    
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN: str = ""
+    AUTHORIZED_USERS: list[int] = []
+    
+    # GitHub
+    GITHUB_TOKEN: str = ""
+    GITHUB_REPO: str = ""
+    GITHUB_DEFAULT_BRANCH: str = "main"
+    
+    # OpenRouter
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    
+    # LLM Models
+    LLM_PM: str = "openrouter/auto"
+    LLM_ANALYST: str = "openrouter/auto"
+    LLM_ARCHITECT: str = "openrouter/auto"
+    LLM_DESIGNER: str = "openrouter/auto"
+    LLM_DEVELOPER: str = "openrouter/auto"
+    LLM_REVIEWER: str = "openrouter/auto"
+    LLM_QA: str = "openrouter/auto"
+    LLM_TECH_WRITER: str = "openrouter/auto"
+    
+    @validator("AUTHORIZED_USERS", pre=True)
+    def parse_authorized_users(cls, v):
+        """Parse AUTHORIZED_USERS from string to list."""
+        if isinstance(v, str):
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        return v
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-    )
 
-    # API Keys
-    openrouter_api_key: str
-    github_token: str
-    github_repo: str
-    telegram_bot_token: str = ""
-    authorized_users: str = ""  # Comma-separated list of Telegram user IDs
-    # GitHub Configuration
-    github_default_branch: str = "main"  # Can be overridden in .env
-
-    # LLM Models per Agent (OpenRouter format)
-    # All roles use z-ai/glm-5, except Reviewer uses different model
-    llm_pm: str = "z-ai/glm-5"
-    llm_analyst: str = "z-ai/glm-5"
-    llm_architect: str = "z-ai/glm-5"
-    llm_designer: str = "z-ai/glm-5"
-    llm_developer: str = "z-ai/glm-5"
-    llm_reviewer: str = "openai/gpt-5.1-codex-mini"
-    llm_qa: str = "z-ai/glm-5"
-    llm_tech_writer: str = "z-ai/glm-5"
-
-    # OpenRouter Base URL
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
-
-
-# Global settings instance
 settings = Settings()
