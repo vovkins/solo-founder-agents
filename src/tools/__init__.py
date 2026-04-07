@@ -15,6 +15,7 @@ from .github_tools import (
     CreateGitHubIssueTool,
     ListOpenIssuesTool,
     CreatePullRequestTool,
+    ReadFileFromRepoTool,
 )
 from .state import StateManager, state_manager
 from .artifact_manager import ArtifactManager, ArtifactType, get_artifact_manager
@@ -33,6 +34,7 @@ def get_github_tools():
         CreateGitHubIssueTool(),
         CreatePullRequestTool(),
         ListOpenIssuesTool(),
+        ReadFileFromRepoTool(),
     ]
 
 
@@ -62,5 +64,6 @@ __all__ = [
     "CreateGitHubIssueTool",
     "ListOpenIssuesTool",
     "CreatePullRequestTool",
+    "ReadFileFromRepoTool",
     "get_github_tools",
 ]
