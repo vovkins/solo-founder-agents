@@ -333,3 +333,37 @@ class ReadFileFromRepoTool(BaseTool):
 
 # Tool instances for import
 read_file_from_repo_tool = ReadFileFromRepoTool()
+
+# Additional Tool Classes for AgentFactory
+
+class CreateBranchTool(BaseTool):
+    """Tool to create a new branch in GitHub repository."""
+    
+    name: str = "create_branch"
+    description: str = "Create a new branch in the repository"
+    
+    def _run(self, branch_name: str, base_branch: str = None) -> str:
+        """Create a new branch."""
+        return create_branch(branch_name, base_branch=base_branch)
+
+
+class GetPullRequestTool(BaseTool):
+    """Tool to get pull request details."""
+    
+    name: str = "get_pull_request"
+    description: str = "Get details of a pull request"
+    
+    def _run(self, pr_number: int) -> str:
+        """Get PR details."""
+        pr = get_pull_request(pr_number)
+        return f"PR #{pr_number}: {pr.title}\nState: {pr.state}\nURL: {pr.html_url}"
+
+
+# Tool instances for AgentFactory
+create_github_issue_tool = CreateGitHubIssueTool()
+list_open_issues_tool = ListOpenIssuesTool()
+read_file_from_repo_tool = ReadFileFromRepoTool()
+create_branch_tool = CreateBranchTool()
+create_pull_request_tool = CreatePullRequestTool()
+get_pull_request_tool = GetPullRequestTool()
+
