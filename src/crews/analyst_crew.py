@@ -57,7 +57,7 @@ def run_analyst_crew() -> CrewResult:
         result = crew.kickoff()
         return {
             "status": "completed",
-            "result": str(result),
+            "result": result.raw if hasattr(result, 'raw') else str(result),
             "artifacts": {"task_specs": "docs/requirements/task-specs.md"},
         }
     except Exception as e:

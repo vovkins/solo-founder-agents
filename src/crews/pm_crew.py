@@ -59,7 +59,7 @@ def run_pm_crew(founder_vision: str) -> CrewResult:
         result = crew.kickoff()
         return {
             "status": "completed",
-            "result": str(result),
+            "result": str(result.raw) if hasattr(result, 'raw') else str(result),
             "artifacts": {"prd": "docs/requirements/prd.md"},
         }
     except Exception as e:

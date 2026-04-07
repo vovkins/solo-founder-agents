@@ -63,7 +63,7 @@ def run_architect_crew() -> CrewResult:
         result = crew.kickoff()
         return {
             "status": "completed",
-            "result": str(result),
+            "result": result.raw if hasattr(result, 'raw') else str(result),
             "artifacts": {
                 "system_design": "docs/design/system-design.md",
                 "standards": "docs/design/standards.md",

@@ -44,7 +44,7 @@ def run_developer_crew(issue_number: int) -> CrewResult:
     try:
         crew = create_developer_crew(issue_number)
         result = crew.kickoff()
-        return {"status": "completed", "result": str(result), "issue_number": issue_number}
+        return {"status": "completed", "result": result.raw if hasattr(result, 'raw') else str(result), "issue_number": issue_number}
     except Exception as e:
         logger.error(f"Developer crew failed: {e}")
         return {"status": "error", "error": str(e), "issue_number": issue_number}
