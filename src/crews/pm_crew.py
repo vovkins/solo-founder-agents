@@ -1,6 +1,7 @@
 """PM crew for requirements and PRD creation."""
 
 from typing import Optional
+from src.crews.types import CrewResult
 from crewai import Crew, Process
 
 
