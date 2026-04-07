@@ -329,3 +329,7 @@ class ReadFileFromRepoTool(BaseTool):
         """
         return read_file_from_repo(path, branch=branch)
 
+
+
+# Tool instances for import
+read_file_from_repo_tool = ReadFileFromRepoTool()
