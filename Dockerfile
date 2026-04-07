@@ -57,6 +57,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ ./src/
 COPY config/ ./config/
 COPY templates/ ./templates/
+COPY prompts/ ./prompts/
 COPY README.md ./
 
 RUN mkdir -p /app/data/artifacts /app/data/state
