@@ -310,3 +310,22 @@ class CreatePullRequestTool(BaseTool):
 create_github_issue_tool = CreateGitHubIssueTool()
 list_open_issues_tool = ListOpenIssuesTool()
 create_pull_request_tool = CreatePullRequestTool()
+
+class ReadFileFromRepoTool(BaseTool):
+    """Tool to read file from GitHub repository."""
+    
+    name: str = "read_file_from_repo"
+    description: str = "Read file content from GitHub repository"
+    
+    def _run(self, path: str, branch: str = None) -> str:
+        """Read file from repository.
+        
+        Args:
+            path: Path to file in repo (relative path)
+            branch: Branch to read from (defaults to settings.github_default_branch)
+        
+        Returns:
+            File content as string
+        """
+        return read_file_from_repo(path, branch=branch)
+
