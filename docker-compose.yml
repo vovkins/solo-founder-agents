@@ -1,21 +1,33 @@
-# Solo Founder Agents - Docker Compose
+version: '3.8'
 
 services:
   telegram-bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: sfa-telegram
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      # OpenRouter
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL}
+      
+      # LLM Models
+      - LLM_PM=${LLM_PM}
+      - LLM_ANALYST=${LLM_ANALYST}
+      - LLM_ARCHITECT=${LLM_ARCHITECT}
+      - LLM_DESIGNER=${LLM_DESIGNER}
+      - LLM_DEVELOPER=${LLM_DEVELOPER}
+      - LLM_REVIEWER=${LLM_REVIEWER}
+      - LLM_QA=${LLM_QA}
+      - LLM_TECH_WRITER=${LLM_TECH_WRITER}
+      
+      # GitHub
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO=${GITHUB_REPO}
+      - GITHUB_DEFAULT_BRANCH=${GITHUB_DEFAULT_BRANCH}
+      
+      # Telegram
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - AUTHORIZED_USERS=${AUTHORIZED_USERS}
     volumes:
       - ./data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: python -m src.bot.telegram
-    profiles:
-      - bot
-
-volumes:
-  data:
+      - ./logs:/app/logs
