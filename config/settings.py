@@ -1,6 +1,7 @@
 """Settings configuration for solo-founder-agents."""
 
-from pydantic import BaseSettings, Field, validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -29,16 +30,15 @@ class Settings(BaseSettings):
     LLM_QA: str = "openrouter/auto"
     LLM_TECH_WRITER: str = "openrouter/auto"
     
-    @validator("AUTHORIZED_USERS", pre=True)
+    @field_validator("AUTHORIZED_USERS", mode="before")
+    @classmethod
     def parse_authorized_users(cls, v):
         """Parse AUTHORIZED_USERS from string to list."""
         if isinstance(v, str):
             return [int(x.strip()) for x in v.split(",") if x.strip()]
         return v
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {"env_file": ".env", "case_sensitive": False}
 
 
 settings = Settings()

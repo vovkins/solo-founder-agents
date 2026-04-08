@@ -64,4 +64,4 @@ RUN mkdir -p /app/data/artifacts /app/data/state
 
 ENV PYTHONPATH=/app
 
-CMD ["sleep", "infinity"]
+CMD ["python", "-m", "src.bot.telegram"]
