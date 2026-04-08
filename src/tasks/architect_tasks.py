@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import architect_agent
+from src.agents import get_architect_agent
 
 
 def create_analyze_requirements_task(prd_path: str, tasks_summary: str) -> Task:
@@ -38,7 +38,7 @@ def create_analyze_requirements_task(prd_path: str, tasks_summary: str) -> Task:
         - Integration requirements
         """,
         expected_output="Technical requirements summary",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )
 
 
@@ -74,7 +74,7 @@ def create_design_architecture_task(requirements: str) -> Task:
         Create architecture diagrams using Mermaid syntax.
         """,
         expected_output="Architecture design with diagrams",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )
 
 
@@ -108,7 +108,7 @@ def create_adr_task(decision_topic: str, context: str) -> Task:
         Save to docs/adr/ADR-XXX.md
         """,
         expected_output="Path to the created ADR document",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )
 
 
@@ -174,7 +174,7 @@ def create_system_design_task(
         Save to docs/design/system-design.md
         """,
         expected_output="Path to the created System Design document",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )
 
 
@@ -225,7 +225,7 @@ def create_standards_task(architecture: str) -> Task:
         Save to docs/standards.md
         """,
         expected_output="Path to the created standards document",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )
 
 
@@ -254,5 +254,5 @@ def create_api_spec_task(system_design_path: str) -> Task:
         Save to docs/api/openapi.yaml
         """,
         expected_output="Path to the OpenAPI spec file",
-        agent=architect_agent,
+        agent=get_architect_agent(),
     )

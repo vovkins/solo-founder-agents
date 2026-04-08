@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import tech_writer_agent
+from src.agents import get_tech_writer_agent
 
 
 def create_readme_task(project_name: str, project_description: str) -> Task:
@@ -60,7 +60,7 @@ def create_readme_task(project_name: str, project_description: str) -> Task:
         Save to README.md in project root.
         """,
         expected_output="Path to created README.md",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )
 
 
@@ -116,7 +116,7 @@ def create_api_docs_task(api_endpoints: list, base_url: str) -> Task:
         Save to docs/api/README.md with individual endpoint files.
         """,
         expected_output="Path to API documentation",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )
 
 
@@ -171,7 +171,7 @@ def create_component_docs_task(components: list) -> Task:
         Save to docs/components/[ComponentName].md
         """,
         expected_output="List of created component documentation files",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )
 
 
@@ -226,7 +226,7 @@ def create_setup_guide_task(
         Save to docs/getting-started.md
         """,
         expected_output="Path to created setup guide",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )
 
 
@@ -280,7 +280,7 @@ def create_changelog_task(
         Save to CHANGELOG.md
         """,
         expected_output="Path to updated CHANGELOG.md",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )
 
 
@@ -335,5 +335,5 @@ def create_architecture_doc_task(
         Save to docs/architecture.md
         """,
         expected_output="Path to created architecture documentation",
-        agent=tech_writer_agent,
+        agent=get_tech_writer_agent(),
     )

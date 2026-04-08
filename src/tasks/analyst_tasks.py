@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import analyst_agent
+from src.agents import get_analyst_agent
 
 
 def create_analyze_prd_task(prd_path: str) -> Task:
@@ -34,7 +34,7 @@ def create_analyze_prd_task(prd_path: str) -> Task:
         - Dependencies on other features
         """,
         expected_output="Structured feature list with all requirements",
-        agent=analyst_agent,
+        agent=get_analyst_agent(),
     )
 
 
@@ -65,7 +65,7 @@ def create_decompose_features_task(features: str) -> Task:
         Split any XL tasks into smaller ones.
         """,
         expected_output="List of decomposed tasks with sizes and dependencies",
-        agent=analyst_agent,
+        agent=get_analyst_agent(),
     )
 
 
@@ -98,7 +98,7 @@ def create_task_specs_task(tasks: str) -> Task:
         Apply appropriate labels (task, size, priority).
         """,
         expected_output="List of created GitHub Issue URLs for tasks",
-        agent=analyst_agent,
+        agent=get_analyst_agent(),
     )
 
 
@@ -133,7 +133,7 @@ def create_dependency_map_task(task_urls: list) -> Task:
         - Identify which tasks can be done in parallel
         """,
         expected_output="Dependency map with recommended execution order",
-        agent=analyst_agent,
+        agent=get_analyst_agent(),
     )
 
 
@@ -177,5 +177,5 @@ def create_sprint_recommendations_task(
         - Any blocked tasks
         """,
         expected_output="Sprint plan with task assignments",
-        agent=analyst_agent,
+        agent=get_analyst_agent(),
     )

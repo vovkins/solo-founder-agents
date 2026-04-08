@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import reviewer_agent
+from src.agents import get_reviewer_agent
 
 
 def create_review_pr_task(pr_url: str, pr_description: str) -> Task:
@@ -47,7 +47,7 @@ def create_review_pr_task(pr_url: str, pr_description: str) -> Task:
         Be constructive and specific in feedback.
         """,
         expected_output="Review summary with comments and approval status",
-        agent=reviewer_agent,
+        agent=get_reviewer_agent(),
     )
 
 
@@ -103,7 +103,7 @@ def create_check_standards_task(pr_files: list) -> Task:
         Report any violations with file and line numbers.
         """,
         expected_output="Standards compliance report",
-        agent=reviewer_agent,
+        agent=get_reviewer_agent(),
     )
 
 
@@ -158,7 +158,7 @@ def create_security_check_task(pr_files: list) -> Task:
         Report any security issues found with severity (Critical/High/Medium/Low).
         """,
         expected_output="Security review report",
-        agent=reviewer_agent,
+        agent=get_reviewer_agent(),
     )
 
 
@@ -207,7 +207,7 @@ def create_review_tests_task(test_files: list) -> Task:
         Provide a test coverage assessment.
         """,
         expected_output="Test coverage review report",
-        agent=reviewer_agent,
+        agent=get_reviewer_agent(),
     )
 
 
@@ -266,5 +266,5 @@ def create_approval_task(
         Submit the review via GitHub API.
         """,
         expected_output="Review submitted (Approved/Changes Requested/Commented)",
-        agent=reviewer_agent,
+        agent=get_reviewer_agent(),
     )

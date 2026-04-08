@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import designer_agent
+from src.agents import get_designer_agent
 
 
 def create_design_system_task(system_design_path: str) -> Task:
@@ -70,7 +70,7 @@ def create_design_system_task(system_design_path: str) -> Task:
         Save to docs/design/design-system.md
         """,
         expected_output="Path to the created design system document",
-        agent=designer_agent,
+        agent=get_designer_agent(),
     )
 
 
@@ -125,7 +125,7 @@ def create_ui_screen_task(screen_name: str, requirements: str) -> Task:
         Save to docs/ui/screens/{screen_name}.md
         """,
         expected_output=f"Path to the created UI spec for {screen_name}",
-        agent=designer_agent,
+        agent=get_designer_agent(),
     )
 
 
@@ -170,7 +170,7 @@ def create_user_flow_task(flow_name: str, steps: str) -> Task:
         Save to docs/user-flows/{flow_name}.md
         """,
         expected_output=f"Path to the created user flow for {flow_name}",
-        agent=designer_agent,
+        agent=get_designer_agent(),
     )
 
 
@@ -224,7 +224,7 @@ def create_component_spec_task(
         Add to docs/components/{component_name}.md
         """,
         expected_output=f"Path to the created component spec for {component_name}",
-        agent=designer_agent,
+        agent=get_designer_agent(),
     )
 
 
@@ -262,5 +262,5 @@ def create_all_screens_task(
         Save each to docs/ui/screens/[ScreenName].md
         """,
         expected_output="List of created screen specification paths",
-        agent=designer_agent,
+        agent=get_designer_agent(),
     )

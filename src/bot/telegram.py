@@ -45,14 +45,8 @@ class TelegramBot:
         self.token = token or settings.telegram_bot_token
         self.app: Optional[Application] = None
         
-        # Auth - use settings.authorized_users if available, else env var
-        auth_users_str = settings.authorized_users or os.environ.get("AUTHORIZED_USERS", "")
-        self.authorized_users: List[int] = []
-        if auth_users_str:
-            try:
-                self.authorized_users = [int(u.strip()) for u in auth_users_str.split(",") if u.strip()]
-            except ValueError:
-                logger.warning(f"Invalid AUTHORIZED_USERS format: {auth_users_str}")
+        # Auth - authorized_users is already a list from settings
+        self.authorized_users: List[int] = settings.authorized_users or []
         
         # Security check: require authorized users
         if not self.authorized_users:

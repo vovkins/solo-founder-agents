@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import qa_agent
+from src.agents import get_qa_agent
 
 
 def create_test_plan_task(pr_url: str, acceptance_criteria: list) -> Task:
@@ -54,7 +54,7 @@ def create_test_plan_task(pr_url: str, acceptance_criteria: list) -> Task:
         Output a structured test plan.
         """,
         expected_output="Test plan with test cases",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -100,7 +100,7 @@ def create_e2e_tests_task(test_cases: list, feature_name: str) -> Task:
         Document all results.
         """,
         expected_output="E2E test results with pass/fail status",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -156,7 +156,7 @@ def create_integration_tests_task(
         Use Jest + Supertest for API testing.
         """,
         expected_output="Integration test results",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -209,7 +209,7 @@ def create_acceptance_verification_task(
         Output acceptance verification report.
         """,
         expected_output="Acceptance criteria verification report",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -262,7 +262,7 @@ def create_bug_report_task(
         Create issue in GitHub.
         """,
         expected_output="URL of created bug report issue",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -316,7 +316,7 @@ def create_qa_signoff_task(
         IMPORTANT: Only sign off if ALL acceptance criteria are met.
         """,
         expected_output="QA sign-off status (Approved/Blocked/Conditional)",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )
 
 
@@ -368,5 +368,5 @@ def create_regression_test_task(
         Output regression test report.
         """,
         expected_output="Regression test results",
-        agent=qa_agent,
+        agent=get_qa_agent(),
     )

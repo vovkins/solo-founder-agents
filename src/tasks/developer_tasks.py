@@ -2,7 +2,7 @@
 
 from crewai import Task
 
-from src.agents import developer_agent
+from src.agents import get_developer_agent
 
 
 def create_analyze_task_task(issue_number: int) -> Task:
@@ -34,7 +34,7 @@ def create_analyze_task_task(issue_number: int) -> Task:
         - Dependencies
         """,
         expected_output="Implementation plan for the task",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )
 
 
@@ -67,7 +67,7 @@ def create_feature_branch_task(
         Use git commands to create the branch.
         """,
         expected_output=f"Branch {branch_name} created and checked out",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )
 
 
@@ -109,7 +109,7 @@ def create_implement_feature_task(
         Ensure code is clean, readable, and maintainable.
         """,
         expected_output="Implementation complete with list of created/modified files",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )
 
 
@@ -152,7 +152,7 @@ def create_write_tests_task(
         Run tests to ensure they pass.
         """,
         expected_output="Unit tests written and passing",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )
 
 
@@ -200,7 +200,7 @@ def create_pull_request_task(
         Create the PR using GitHub API.
         """,
         expected_output="URL of created Pull Request",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )
 
 
@@ -240,5 +240,5 @@ def create_fix_review_comments_task(
         - Update tests if needed
         """,
         expected_output="Review comments addressed and fixes pushed",
-        agent=developer_agent,
+        agent=get_developer_agent(),
     )

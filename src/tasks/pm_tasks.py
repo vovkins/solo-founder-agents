@@ -2,18 +2,11 @@
 
 from crewai import Task
 
-from src.agents import pm_agent
+from src.agents import get_pm_agent
 
 
 def create_collect_requirements_task(user_input: str) -> Task:
-    """Create task for collecting requirements from founder.
-
-    Args:
-        user_input: Initial input/vision from founder
-
-    Returns:
-        Task for requirement collection
-    """
+    """Create task for collecting requirements from founder."""
     return Task(
         description=f"""
         Collect and clarify product requirements from the founder.
@@ -30,19 +23,12 @@ def create_collect_requirements_task(user_input: str) -> Task:
         Ask follow-up questions until you have enough information to create a PRD.
         """,
         expected_output="Structured requirements document with goals, personas, features, and priorities",
-        agent=pm_agent,
+        agent=get_pm_agent(),
     )
 
 
 def create_prd_task(requirements: str) -> Task:
-    """Create task for generating PRD document.
-
-    Args:
-        requirements: Structured requirements from collection phase
-
-    Returns:
-        Task for PRD creation
-    """
+    """Create task for generating PRD document."""
     return Task(
         description=f"""
         Create a comprehensive Product Requirements Document (PRD).
@@ -59,21 +45,16 @@ def create_prd_task(requirements: str) -> Task:
         - Out of scope items
         
         Save the PRD to docs/requirements/prd.md
+        
+        IMPORTANT: This is the ONLY time you write to prd.md. Do NOT overwrite it later.
         """,
         expected_output="Path to the created PRD document (docs/requirements/prd.md)",
-        agent=pm_agent,
+        agent=get_pm_agent(),
     )
 
 
 def create_backlog_task(prd_content: str) -> Task:
-    """Create task for generating GitHub Issues backlog.
-
-    Args:
-        prd_content: Content of the PRD document
-
-    Returns:
-        Task for backlog generation
-    """
+    """Create task for generating product backlog."""
     return Task(
         description=f"""
         Generate the product backlog from the PRD.
@@ -82,28 +63,25 @@ def create_backlog_task(prd_content: str) -> Task:
         {prd_content}
         
         Your job is to:
-        1. Decompose the PRD into features (epic-level)
-        2. Create a GitHub Issue for each feature
-        3. Apply appropriate labels (feature, priority)
-        4. Add acceptance criteria to each issue
+        1. Decompose the PRD into features and tasks (epic-level)
+        2. Write each task with description and acceptance criteria
+        3. Save the backlog to docs/requirements/backlog.md
+        4. Create a GitHub Issue for each feature/task
+        5. Apply appropriate labels (feature, priority)
         
         Use the feature template from templates/github-issue-feature.md
+        
+        CRITICAL: Write the backlog to docs/requirements/backlog.md — NOT to prd.md!
+        The prd.md file must NOT be modified during this step.
         """,
-        expected_output="List of created GitHub Issue URLs",
-        agent=pm_agent,
+        expected_output="Path to the created backlog (docs/requirements/backlog.md) and list of GitHub Issue URLs",
+        agent=get_pm_agent(),
     )
 
 
 def create_prioritize_backlog_task(issue_urls: list) -> Task:
-    """Create task for prioritizing the backlog.
-
-    Args:
-        issue_urls: List of GitHub Issue URLs
-
-    Returns:
-        Task for backlog prioritization
-    """
-    issues_str = "\n".join(f"- {url}" for url in issue_urls)
+    """Create task for prioritizing the backlog."""
+    issues_str = "\n".join(f"- {{url}}" for url in issue_urls)
 
     return Task(
         description=f"""
@@ -112,14 +90,19 @@ def create_prioritize_backlog_task(issue_urls: list) -> Task:
         Issues created:
         {issues_str}
         
-        Apply priority labels to each issue:
-        - P0: Critical (Must have for MVP)
-        - P1: High (Should have)
-        - P2: Medium (Could have)
-        - P3: Low (Nice to have)
+        Your job is to:
+        1. Read the current backlog from docs/requirements/backlog.md
+        2. Apply priority labels to each backlog item:
+           - P0: Critical (Must have for MVP)
+           - P1: High (Should have)
+           - P2: Medium (Could have)
+           - P3: Low (Nice to have)
+        3. Update docs/requirements/backlog.md with the priorities
+        4. Add milestone assignments if applicable
         
-        Also add milestone assignments if applicable.
+        CRITICAL: Update docs/requirements/backlog.md only. 
+        Do NOT modify docs/requirements/prd.md!
         """,
-        expected_output="Updated list of issues with priorities",
-        agent=pm_agent,
+        expected_output="Updated docs/requirements/backlog.md with priorities",
+        agent=get_pm_agent(),
     )
