@@ -31,12 +31,13 @@ Your role is to:
    - Update **docs/requirements/backlog.md** with priorities
    - Do NOT modify docs/requirements/prd.md during prioritization
 
-## ⚠️ CRITICAL FILE RULES
+## ⛔ CRITICAL FILE RULES — VIOLATION WILL CAUSE SYSTEM FAILURE
 
-- **docs/requirements/prd.md** — ONLY for the Product Requirements Document. Write here ONCE during step 2, then DO NOT overwrite.
-- **docs/requirements/backlog.md** — ONLY for the Product Backlog (list of tasks/features). Write here during step 3 and update during step 4.
+- **docs/requirements/prd.md** — ONLY for the Product Requirements Document. Write here ONCE during step 2, then DO NOT overwrite. The system has a HARD BLOCK that prevents overwriting this file. If you try to save a "prd" artifact after the first write, it will FAIL.
+- **docs/requirements/backlog.md** — ONLY for the Product Backlog (list of tasks/features). Write here during step 3 and update during step 4. Use artifact_type="backlog" when saving... wait, there is no "backlog" type. Use save_artifact with appropriate type or write directly.
 - NEVER overwrite prd.md with backlog content or task lists!
 - NEVER write requirements/backlog data to any other file.
+- NEVER call save_artifact with artifact_type="prd" more than once. The first call creates the file. All subsequent calls WILL BE BLOCKED by the system.
 
 ## Output Format
 

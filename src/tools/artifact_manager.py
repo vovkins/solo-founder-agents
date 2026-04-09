@@ -20,6 +20,7 @@ class ArtifactType(Enum):
     """Types of artifacts."""
 
     PRD = "prd"
+    BACKLOG = "backlog"
     SYSTEM_DESIGN = "system-design"
     ADR = "adr"
     DESIGN_SYSTEM = "design-system"
@@ -140,6 +141,32 @@ class ArtifactManager:
                 f"Role '{role}' cannot write to '{artifact.path}'. "
                 f"Check your permissions with list_my_files tool."
             )
+
+        # === WRITE-ONCE GUARD for PRD ===
+        # PRD must only be written ONCE. After creation, it must NOT be overwritten.
+        # Other artifact types (backlog, design, etc.) can be updated freely.
+        if artifact.type == ArtifactType.PRD:
+            try:
+                existing = read_file_from_repo(artifact.path, self.branch)
+                if existing is not None and existing.strip():
+                    logger.warning(
+                        f"BLOCKED: PRD already exists at '{artifact.path}' — "
+                        f"write-once policy. Use backlog.md for task lists."
+                    )
+                    raise PermissionError(
+                        f"PRD already exists at '{artifact.path}' and cannot be overwritten. "
+                        f"The PRD is written ONCE during creation. "
+                        f"If you need to add tasks or backlog items, write to "
+                        f"docs/requirements/backlog.md instead."
+                    )
+            except FileNotFoundError:
+                pass  # File doesn't exist yet — first write is allowed
+            except PermissionError:
+                raise  # Re-raise our own PermissionError
+            except Exception as e:
+                # If we can't check (e.g. GitHub API error), log but allow
+                logger.warning(f"Could not check existing PRD: {e}")
+
         logger.info(f"[PERMISSION GRANTED] role={role} → {artifact.path}")
 
         # Save locally
@@ -296,6 +323,8 @@ class ArtifactManager:
 
         if artifact_type == ArtifactType.PRD:
             path = "docs/requirements/prd.md"
+        elif artifact_type == ArtifactType.BACKLOG:
+            path = "docs/requirements/backlog.md"
         elif artifact_type == ArtifactType.SYSTEM_DESIGN:
             path = "docs/design/system-design.md"
         elif artifact_type == ArtifactType.ADR:

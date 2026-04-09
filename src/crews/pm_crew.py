@@ -28,10 +28,19 @@ def create_pm_crew(
     )
 
     # Create PM tasks
+    # NOTE: In CrewAI sequential process, the output of the previous task
+    # is automatically passed as context to the next task. The string arguments
+    # below are just descriptive placeholders for the task description — they
+    # are NOT template variables. The actual data flows through CrewAI's
+    # built-in context passing mechanism.
     collect_requirements = create_collect_requirements_task(founder_vision)
-    create_prd = create_prd_task("{{requirements_output}}")
-    generate_backlog = create_backlog_task("{{prd_output}}")
-    prioritize_backlog = create_prioritize_backlog_task(["{{issue_urls}}"])
+    create_prd = create_prd_task(
+        "Use the requirements collected in the previous step."
+    )
+    generate_backlog = create_backlog_task(
+        "Use the PRD created in the previous step."
+    )
+    prioritize_backlog = create_prioritize_backlog_task([])
 
     return Crew(
         agents=[pm_agent],

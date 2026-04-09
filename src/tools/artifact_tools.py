@@ -27,7 +27,7 @@ class SaveArtifactInput(BaseModel):
 
     artifact_type: str = Field(
         ...,
-        description="Type of artifact: prd, system-design, adr, design-system, ui-screen, user-flow, test-case, test-run-log",
+        description="Type of artifact: prd, backlog, system-design, adr, design-system, ui-screen, user-flow, test-case, test-run-log",
     )
     content: str = Field(..., description="Content of the artifact in Markdown format")
     name: Optional[str] = Field(None, description="Optional name for the artifact (used in filename)")
@@ -68,6 +68,7 @@ class SaveArtifactTool(BaseTool):
         # Map string to enum
         type_map = {
             "prd": ArtifactType.PRD,
+            "backlog": ArtifactType.BACKLOG,
             "system-design": ArtifactType.SYSTEM_DESIGN,
             "adr": ArtifactType.ADR,
             "design-system": ArtifactType.DESIGN_SYSTEM,
