@@ -232,7 +232,7 @@ class TelegramBot:
         def run_pipeline_thread():
             """Run pipeline in background and send updates."""
             import asyncio
-            
+
             # Get PRD content as founder_vision
             founder_vision = "Implement the feature described in docs/requirements/prd.md"
             try:
@@ -244,84 +244,89 @@ class TelegramBot:
                 logger.warning(f"Could not read PRD: {e}")
 
             try:
-                # Callback for progress updates
-                def on_progress(phase: str, message: str):
-                    logger.info(f"Pipeline progress: {phase} - {message}")
-                    # Send Telegram update synchronously using run_until_complete
-                    async def send_progress():
-                        try:
-                            await self.app.bot.send_message(
-                                chat_id=chat_id,
-                                text=f"📊 <b>{phase.title()}</b>: {message}",
-                                parse_mode="HTML"
-                            )
-                        except Exception as e:
-                            logger.error(f"Failed to send progress: {e}")
-                    # Run in the thread's event loop
-                    asyncio.run(send_progress())
-                
-                # Callback for checkpoints
-                def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
-                    logger.info(f"Checkpoint reached: {checkpoint}")
-                    state_manager.set_checkpoint(
-                        checkpoint.value,
-                        "pending_review",
-                        artifacts
-                    )
-                    # Send checkpoint notification synchronously
-                    async def send_checkpoint():
-                        artifact_list = "\n".join([f"  • {a}" for a in artifacts])
-                        try:
-                            await self.app.bot.send_message(
-                                chat_id=chat_id,
-                                text=f"🛑 <b>Checkpoint: {checkpoint.value}</b>\n\n"
-                                     f"Артефакты для проверки:\n{artifact_list}\n\n"
-                                     f"✅ <code>/approve</code> — одобрить\n"
-                                     f"❌ <code>/reject &lt;причина&gt;</code> — отклонить",
-                                parse_mode="HTML"
-                            )
-                        except Exception as e:
-                            logger.error(f"Failed to send checkpoint: {e}")
-                    # Run in a new event loop (asyncio.run handles loop creation/cleanup)
-                    asyncio.run(send_checkpoint())
-                
-                # Run the pipeline
-                result = pipeline.run_full_pipeline(
-                    issue_number=issue_number,
-                    founder_vision=founder_vision,
-                    on_checkpoint=on_checkpoint,
-                    on_progress=on_progress,
-                )
-                
-                # Send final result
-                async def send_result():
-                    if result.get("status") == "complete":
-                        pr_urls = result.get("phases", {}).get("implementation", {}).get("pr_url")
-                        msg = f"✅ <b>Задача #{issue_number} завершена!</b>\n\n"
-                        if pr_urls:
-                            msg += f"📎 PR: {pr_urls}\n\n"
-                        msg += "Все фазы выполнены успешно."
-                    else:
-                        error = result.get("error", "Unknown error")
-                        msg = f"❌ <b>Ошибка выполнения задачи #{issue_number}</b>\n\n{error}"
-                    
-                    try:
-                        await self.app.bot.send_message(
-                            chat_id=chat_id,
-                            text=msg,
-                            parse_mode="HTML"
+                # Create event loop once and reuse it for all async operations
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    # Callback for progress updates
+                    def on_progress(phase: str, message: str):
+                        logger.info(f"Pipeline progress: {phase} - {message}")
+                        # Send Telegram update synchronously using the shared loop
+                        async def send_progress():
+                            try:
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=f"📊 <b>{phase.title()}</b>: {message}",
+                                    parse_mode="HTML"
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send progress: {e}")
+
+                        loop.run_until_complete(send_progress())
+
+                    # Callback for checkpoints
+                    def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
+                        logger.info(f"Checkpoint reached: {checkpoint}")
+                        state_manager.set_checkpoint(
+                            checkpoint.value,
+                            "pending_review",
+                            artifacts
                         )
-                    except Exception as e:
-                        logger.error(f"Failed to send result: {e}")
-                    
-                    state_manager.set_task_status(issue_key, result.get("status", "error"))
-                
-                asyncio.run(send_result())
-                
-            finally:
-                # Clean up
-                if issue_key in self.active_pipelines:
-                    del self.active_pipelines[issue_key]
+                        # Send checkpoint notification synchronously using the shared loop
+                        async def send_checkpoint():
+                            artifact_list = "\n".join([f"  • {a}" for a in artifacts])
+                            try:
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=f"🛑 <b>Checkpoint: {checkpoint.value}</b>\n\n"
+                                         f"Артефакты для проверки:\n{artifact_list}\n\n"
+                                         f"✅ <code>/approve</code> — одобрить\n"
+                                         f"❌ <code>/reject &lt;причина&gt;</code> — отклонить",
+                                    parse_mode="HTML"
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send checkpoint: {e}")
+
+                        loop.run_until_complete(send_checkpoint())
+
+                    # Run the pipeline
+                    result = pipeline.run_full_pipeline(
+                        issue_number=issue_number,
+                        founder_vision=founder_vision,
+                        on_checkpoint=on_checkpoint,
+                        on_progress=on_progress,
+                    )
+
+                    # Send final result using the shared loop
+                    async def send_result():
+                        if result.get("status") == "complete":
+                            pr_urls = result.get("phases", {}).get("implementation", {}).get("pr_url")
+                            msg = f"✅ <b>Задача #{issue_number} завершена!</b>\n\n"
+                            if pr_urls:
+                                msg += f"📎 PR: {pr_urls}\n\n"
+                            msg += "Все фазы выполнены успешно."
+                        else:
+                            error = result.get("error", "Unknown error")
+                            msg = f"❌ <b>Ошибка выполнения задачи #{issue_number}</b>\n\n{error}"
+
+                        try:
+                            await self.app.bot.send_message(
+                                chat_id=chat_id,
+                                text=msg,
+                                parse_mode="HTML"
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send result: {e}")
+
+                        state_manager.set_task_status(issue_key, result.get("status", "error"))
+
+                    loop.run_until_complete(send_result())
+                finally:
+                    # Clean up event loop
+                    if not loop.is_closed():
+                        loop.close()
+            except Exception as e:
+                logger.error(f"Pipeline thread failed: {e}", exc_info=True)
 
         # Start thread (thread-safe)
         with self._pipeline_lock:
