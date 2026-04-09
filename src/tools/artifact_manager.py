@@ -28,6 +28,8 @@ class ArtifactType(Enum):
     USER_FLOW = "user-flow"
     TEST_CASE = "test-case"
     TEST_RUN_LOG = "test-run-log"
+    TASK_SPECS = "task-specs"
+    DEP_MAP = "dep-map"
     PR = "pull-request"
     GITHUB_ISSUE = "github-issue"
 
@@ -335,6 +337,10 @@ class ArtifactManager:
             path = f"docs/tests/{name or timestamp}-test-case.md"
         elif artifact_type == ArtifactType.TEST_RUN_LOG:
             path = f"docs/tests/{name or timestamp}-run-log.md"
+        elif artifact_type == ArtifactType.TASK_SPECS:
+            path = "docs/requirements/task-specs.md"
+        elif artifact_type == ArtifactType.DEP_MAP:
+            path = "docs/requirements/dep-map.md"
         else:
             path = f"docs/{name or timestamp}.md"
 

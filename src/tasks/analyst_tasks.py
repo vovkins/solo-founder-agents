@@ -96,6 +96,12 @@ def create_task_specs_task(tasks: str) -> Task:
         
         Use the template from templates/github-issue-feature.md
         Apply appropriate labels (task, size, priority).
+        
+        After creating all issues, save the combined task specifications document
+        using save_artifact with artifact_type="task-specs".
+        
+        ⚠️ IMPORTANT: Use ONLY artifact_type="task-specs" for saving specs.
+        NEVER use "backlog" or "prd" — those belong to PM role.
         """,
         expected_output="List of created GitHub Issue URLs for tasks",
         agent=get_analyst_agent(),
@@ -126,6 +132,11 @@ def create_dependency_map_task(task_urls: list) -> Task:
         3. Recommend execution order
         4. Flag any blocking tasks
         5. Suggest parallel work streams
+        
+        Save the dependency map using save_artifact with artifact_type="dep-map".
+        
+        ⚠️ IMPORTANT: Use ONLY artifact_type="dep-map" for saving the dependency map.
+        NEVER use "backlog" or "prd" — those belong to PM role.
         
         Output format:
         - List tasks in recommended order
