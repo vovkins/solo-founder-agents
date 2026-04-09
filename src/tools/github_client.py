@@ -4,6 +4,7 @@ FIX: Added factory function for dependency injection.
 """
 
 import logging
+import re
 import time
 from typing import List, Optional
 from functools import wraps
@@ -71,6 +72,69 @@ def handle_github_errors(func):
     return wrapper
 
 
+def sanitize_label_name(name: str) -> str:
+    """Sanitize a label name to be valid for GitHub.
+
+    GitHub label rules:
+    - Max 48 characters (limit raised to 255 but we keep it safe)
+    - Cannot be empty
+    - No leading/trailing whitespace
+    - Allow: alphanumeric, hyphens, underscores, colons, spaces, dots
+    """
+    if not name or not name.strip():
+        return "untitled"
+    name = name.strip()
+    # Replace disallowed characters with hyphens
+    name = re.sub(r'[^a-zA-Z0-9_\-\:\.\s]', '-', name)
+    # Collapse multiple hyphens/spaces
+    name = re.sub(r'-{2,}', '-', name)
+    name = re.sub(r'\s{2,}', ' ', name)
+    # Trim to max 48 chars
+    name = name[:48].rstrip('- ')
+    return name or "untitled"
+
+
+def ensure_labels_exist(repo: Repository.Repository, labels: List[str]) -> List[str]:
+    """Ensure all labels exist in the repository, creating them if needed.
+
+    Args:
+        repo: PyGithub Repository object
+        labels: List of label names to ensure exist
+
+    Returns:
+        Sanitized list of label names that now exist in the repo
+    """
+    if not labels:
+        return []
+
+    sanitized = [sanitize_label_name(l) for l in labels]
+    # De-duplicate
+    sanitized = list(dict.fromkeys(sanitized))
+
+    # Fetch existing labels (cached for the call)
+    try:
+        existing = {label.name for label in repo.get_labels()}
+    except Exception as e:
+        logger.warning(f"Could not fetch existing labels: {e}")
+        existing = set()
+
+    for label_name in sanitized:
+        if label_name not in existing:
+            try:
+                repo.create_label(name=label_name, color="ededed")
+                logger.info(f"Created label '{label_name}' in repository")
+                existing.add(label_name)
+            except GithubException as e:
+                if e.status == 422:
+                    # Label already exists (race condition)
+                    logger.debug(f"Label '{label_name}' already exists (422)")
+                    existing.add(label_name)
+                else:
+                    logger.warning(f"Could not create label '{label_name}': {e}")
+
+    return sanitized
+
+
 class GitHubClient:
     """Client for GitHub API operations with error handling and retry logic."""
 
@@ -112,10 +176,12 @@ class GitHubClient:
     ) -> Issue.Issue:
         """Create a new issue."""
         logger.info(f"Creating issue: {title}")
+        # Ensure labels exist before creating the issue
+        safe_labels = ensure_labels_exist(self.repo, labels or [])
         return self.repo.create_issue(
             title=title,
             body=body,
-            labels=labels or [],
+            labels=safe_labels,
             assignees=assignees or [],
         )
 
@@ -156,9 +222,11 @@ class GitHubClient:
     @retry_on_rate_limit(max_retries=3)
     def add_label(self, issue_number: int, label: str) -> None:
         """Add a label to an issue."""
-        logger.info(f"Adding label '{label}' to issue #{issue_number}")
+        safe_label = sanitize_label_name(label)
+        logger.info(f"Adding label '{safe_label}' to issue #{issue_number}")
+        ensure_labels_exist(self.repo, [safe_label])
         issue = self.get_issue(issue_number)
-        issue.add_to_labels(label)
+        issue.add_to_labels(safe_label)
 
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
