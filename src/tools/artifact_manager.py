@@ -21,15 +21,24 @@ class ArtifactType(Enum):
 
     PRD = "prd"
     BACKLOG = "backlog"
+    PERSONAS = "personas"
+    TASK_SPECS = "task-specs"
+    DEP_MAP = "dep-map"
+    FEATURE_SPEC = "feature-spec"
     SYSTEM_DESIGN = "system-design"
+    STANDARDS = "standards"
     ADR = "adr"
     DESIGN_SYSTEM = "design-system"
     UI_SCREEN = "ui-screen"
+    UI_COMPONENT = "ui-component"
     USER_FLOW = "user-flow"
+    IMPLEMENTATION = "implementation"
     TEST_CASE = "test-case"
     TEST_RUN_LOG = "test-run-log"
-    TASK_SPECS = "task-specs"
-    DEP_MAP = "dep-map"
+    QA_SIGNOFF = "qa-signoff"
+    USER_GUIDE = "user-guide"
+    API_DOCS = "api-docs"
+    CHANGELOG = "changelog"
     PR = "pull-request"
     GITHUB_ISSUE = "github-issue"
 
@@ -323,24 +332,42 @@ class ArtifactManager:
             path = "docs/requirements/prd.md"
         elif artifact_type == ArtifactType.BACKLOG:
             path = "docs/requirements/backlog.md"
+        elif artifact_type == ArtifactType.PERSONAS:
+            path = "docs/requirements/personas.md"
+        elif artifact_type == ArtifactType.TASK_SPECS:
+            path = "docs/requirements/task-specs.md"
+        elif artifact_type == ArtifactType.DEP_MAP:
+            path = "docs/requirements/dep-map.md"
+        elif artifact_type == ArtifactType.FEATURE_SPEC:
+            path = f"docs/requirements/feature-{name or timestamp}.md"
         elif artifact_type == ArtifactType.SYSTEM_DESIGN:
             path = "docs/design/system-design.md"
+        elif artifact_type == ArtifactType.STANDARDS:
+            path = "docs/design/standards.md"
         elif artifact_type == ArtifactType.ADR:
             path = f"docs/adr/{name or timestamp}.md"
         elif artifact_type == ArtifactType.DESIGN_SYSTEM:
             path = "docs/design/design-system.md"
         elif artifact_type == ArtifactType.UI_SCREEN:
             path = f"docs/design/ui/screens/{name or timestamp}.md"
+        elif artifact_type == ArtifactType.UI_COMPONENT:
+            path = f"docs/design/ui/components/{name or timestamp}.md"
         elif artifact_type == ArtifactType.USER_FLOW:
             path = f"docs/design/ui/flows/{name or timestamp}.md"
+        elif artifact_type == ArtifactType.IMPLEMENTATION:
+            path = f"docs/implementation/{name or timestamp}.md"
         elif artifact_type == ArtifactType.TEST_CASE:
             path = f"docs/tests/{name or timestamp}-test-case.md"
         elif artifact_type == ArtifactType.TEST_RUN_LOG:
             path = f"docs/tests/{name or timestamp}-run-log.md"
-        elif artifact_type == ArtifactType.TASK_SPECS:
-            path = "docs/requirements/task-specs.md"
-        elif artifact_type == ArtifactType.DEP_MAP:
-            path = "docs/requirements/dep-map.md"
+        elif artifact_type == ArtifactType.QA_SIGNOFF:
+            path = f"docs/tests/qa-signoff-{name or timestamp}.md"
+        elif artifact_type == ArtifactType.USER_GUIDE:
+            path = "docs/user-guide.md"
+        elif artifact_type == ArtifactType.API_DOCS:
+            path = "docs/api-docs.md"
+        elif artifact_type == ArtifactType.CHANGELOG:
+            path = "docs/changelog.md"
         else:
             path = f"docs/{name or timestamp}.md"
 

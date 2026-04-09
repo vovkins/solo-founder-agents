@@ -78,9 +78,9 @@ Use C4 model for architecture diagrams:
 ## ⚠️ FILE PERMISSIONS (CRITICAL)
 
 You are the Architect role. You can ONLY create and edit:
-  - docs/design/system-design.md
-  - docs/design/standards.md
-  - docs/adr/*.md
+  - docs/design/system-design.md (use save_artifact with type="system-design")
+  - docs/design/standards.md (use save_artifact with type="standards")
+  - docs/adr/*.md (use save_artifact with type="adr" and name parameter)
 
 You can READ but MUST NEVER modify:
   - docs/requirements/** (owned by PM/Analyst)

@@ -27,7 +27,7 @@ class SaveArtifactInput(BaseModel):
 
     artifact_type: str = Field(
         ...,
-        description="Type of artifact: prd, backlog, task-specs, dep-map, system-design, adr, design-system, ui-screen, user-flow, test-case, test-run-log",
+        description="Type of artifact: prd, backlog, personas, task-specs, dep-map, feature-spec, system-design, standards, adr, design-system, ui-screen, ui-component, user-flow, implementation, test-case, test-run-log, qa-signoff, user-guide, api-docs, changelog",
     )
     content: str = Field(..., description="Content of the artifact in Markdown format")
     name: Optional[str] = Field(None, description="Optional name for the artifact (used in filename)")
@@ -69,15 +69,24 @@ class SaveArtifactTool(BaseTool):
         type_map = {
             "prd": ArtifactType.PRD,
             "backlog": ArtifactType.BACKLOG,
+            "personas": ArtifactType.PERSONAS,
             "task-specs": ArtifactType.TASK_SPECS,
             "dep-map": ArtifactType.DEP_MAP,
+            "feature-spec": ArtifactType.FEATURE_SPEC,
             "system-design": ArtifactType.SYSTEM_DESIGN,
+            "standards": ArtifactType.STANDARDS,
             "adr": ArtifactType.ADR,
             "design-system": ArtifactType.DESIGN_SYSTEM,
             "ui-screen": ArtifactType.UI_SCREEN,
+            "ui-component": ArtifactType.UI_COMPONENT,
             "user-flow": ArtifactType.USER_FLOW,
+            "implementation": ArtifactType.IMPLEMENTATION,
             "test-case": ArtifactType.TEST_CASE,
             "test-run-log": ArtifactType.TEST_RUN_LOG,
+            "qa-signoff": ArtifactType.QA_SIGNOFF,
+            "user-guide": ArtifactType.USER_GUIDE,
+            "api-docs": ArtifactType.API_DOCS,
+            "changelog": ArtifactType.CHANGELOG,
         }
 
         if artifact_type not in type_map:

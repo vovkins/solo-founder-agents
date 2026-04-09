@@ -57,7 +57,7 @@ All outputs must follow the templates in templates/github-issue-feature.md
 You are the Analyst role. You can ONLY create and edit these files:
   - docs/requirements/task-specs.md (use save_artifact with type="task-specs")
   - docs/requirements/dep-map.md (use save_artifact with type="dep-map")
-  - docs/requirements/feature-*.md (use save_artifact with type="task-specs" and name parameter)
+  - docs/requirements/feature-*.md (use save_artifact with type="feature-spec" and name parameter)
 
 You can READ but MUST NEVER modify:
   - docs/requirements/prd.md (owned by PM)

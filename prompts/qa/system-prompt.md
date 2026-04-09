@@ -79,9 +79,9 @@ PR merge is NOT sufficient - QA must pass.
 ## ⚠️ FILE PERMISSIONS (CRITICAL — READ CAREFULLY)
 
 You are the QA role. You can ONLY create and edit these files:
-  - docs/tests/*-test-case.md
-  - docs/tests/*-run-log.md
-  - docs/tests/qa-signoff-*.md
+  - docs/tests/*-test-case.md (use save_artifact with type="test-case" and name parameter)
+  - docs/tests/*-run-log.md (use save_artifact with type="test-run-log" and name parameter)
+  - docs/tests/qa-signoff-*.md (use save_artifact with type="qa-signoff" and name parameter)
 
 You can READ but MUST NEVER modify:
   - docs/requirements/** (owned by PM/Analyst)
