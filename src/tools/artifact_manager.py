@@ -142,30 +142,26 @@ class ArtifactManager:
                 f"Check your permissions with list_my_files tool."
             )
 
-        # === WRITE-ONCE GUARD for PRD ===
-        # PRD must only be written ONCE. After creation, it must NOT be overwritten.
-        # Other artifact types (backlog, design, etc.) can be updated freely.
+        # === PRD OVERWRITE GUARD ===
+        # Track PRD writes per session. After MAX_PRD_WRITES attempts, block further writes.
+        # This prevents PM from endlessly rewriting PRD while allowing initial creation
+        # and one revision (collect_requirements may create a stub, create_prd writes the full version).
         if artifact.type == ArtifactType.PRD:
-            try:
-                existing = read_file_from_repo(artifact.path, self.branch)
-                if existing is not None and existing.strip():
-                    logger.warning(
-                        f"BLOCKED: PRD already exists at '{artifact.path}' — "
-                        f"write-once policy. Use backlog.md for task lists."
-                    )
-                    raise PermissionError(
-                        f"PRD already exists at '{artifact.path}' and cannot be overwritten. "
-                        f"The PRD is written ONCE during creation. "
-                        f"If you need to add tasks or backlog items, write to "
-                        f"docs/requirements/backlog.md instead."
-                    )
-            except FileNotFoundError:
-                pass  # File doesn't exist yet — first write is allowed
-            except PermissionError:
-                raise  # Re-raise our own PermissionError
-            except Exception as e:
-                # If we can't check (e.g. GitHub API error), log but allow
-                logger.warning(f"Could not check existing PRD: {e}")
+            if not hasattr(self, '_prd_write_count'):
+                self._prd_write_count = 0
+            self._prd_write_count += 1
+            MAX_PRD_WRITES = 3
+            if self._prd_write_count > MAX_PRD_WRITES:
+                logger.warning(
+                    f"BLOCKED: PRD write #{self._prd_write_count} exceeds limit ({MAX_PRD_WRITES}). "
+                    f"Use backlog.md for task lists."
+                )
+                raise PermissionError(
+                    f"PRD has already been written {MAX_PRD_WRITES} times and cannot be modified further. "
+                    f"If you need to add tasks or backlog items, write to "
+                    f"docs/requirements/backlog.md instead."
+                )
+            logger.info(f"[PRD WRITE] Attempt #{self._prd_write_count}/{MAX_PRD_WRITES}")
 
         logger.info(f"[PERMISSION GRANTED] role={role} → {artifact.path}")
 
