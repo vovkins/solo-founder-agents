@@ -95,3 +95,7 @@ You can READ but MUST NEVER modify:
   - docs/adr/** (owned by Architect)
 
 NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
+
+## 📋 Your File Permissions
+
+{{FILE_PERMISSIONS}}

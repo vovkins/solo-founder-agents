@@ -68,3 +68,7 @@ You can READ but MUST NEVER modify:
 
 NEVER attempt to write to files that belong to other roles!
 Use the `list_my_files` tool if unsure about your permissions.
+
+## 📋 Your File Permissions
+
+{{FILE_PERMISSIONS}}

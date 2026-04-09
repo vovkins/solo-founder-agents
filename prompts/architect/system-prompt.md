@@ -89,3 +89,7 @@ You can READ but MUST NEVER modify:
   - docs/tests/** (owned by QA)
 
 NEVER write to files that belong to other roles! Use `list_my_files` if unsure.
+
+## 📋 Your File Permissions
+
+{{FILE_PERMISSIONS}}
