@@ -338,6 +338,11 @@ class Pipeline:
         """
         results = {"issue_number": issue_number, "phases": {}}
 
+        # Clear stale checkpoints from previous runs
+        with self._lock:
+            state_manager.state["checkpoints"] = {}
+            state_manager.save_state()
+
         try:
             # Phase 1: Requirements (PM)
             if on_progress:
