@@ -274,14 +274,28 @@ class TelegramBot:
                         )
                         # Send checkpoint notification synchronously using the shared loop
                         async def send_checkpoint():
-                            artifact_list = "\n".join([f"  • {a}" for a in artifacts])
+                            # Human-readable checkpoint names
+                            checkpoint_names = {
+                                "checkpoint_1": "📋 Требования (PM)",
+                                "checkpoint_2": "📊 Анализ (Analyst)",
+                                "checkpoint_3": "🏗️ Архитектура (Architect)",
+                                "checkpoint_4": "👀 Ревью кода (Reviewer)",
+                                "checkpoint_5": "✅ Финальная проверка (QA)",
+                            }
+                            cp_name = checkpoint_names.get(
+                                checkpoint.value, checkpoint.value
+                            )
+                            repo_url = f"https://github.com/{settings.github_repo}"
                             try:
                                 await self.app.bot.send_message(
                                     chat_id=chat_id,
-                                    text=f"🛑 <b>Checkpoint: {checkpoint.value}</b>\n\n"
-                                         f"Артефакты для проверки:\n{artifact_list}\n\n"
-                                         f"✅ <code>/approve</code> — одобрить\n"
-                                         f"❌ <code>/reject &lt;причина&gt;</code> — отклонить",
+                                    text=(
+                                        f"🛑 <b>Checkpoint: {cp_name}</b>\n\n"
+                                        f"Фаза завершена. Проверь результат:\n"
+                                        f"🔗 <a href=\"{repo_url}\">{settings.github_repo}</a>\n\n"
+                                        f"✅ <code>/approve</code> — одобрить\n"
+                                        f"❌ <code>/reject &lt;причина&gt;</code> — отклонить"
+                                    ),
                                     parse_mode="HTML"
                                 )
                             except Exception as e:
