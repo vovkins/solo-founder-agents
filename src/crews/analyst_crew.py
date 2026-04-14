@@ -1,16 +1,18 @@
 from src.crews.types import CrewResult
-"""Analyst crew for feature decomposition and task specs."""
+"""Analyst crew for epic decomposition and task specs."""
 
 from typing import Optional
 from crewai import Crew, Process
 
 
 def create_analyst_crew(
+    backlog_path: str = "docs/requirements/backlog.md",
     verbose: bool = True,
 ) -> Crew:
-    """Create a crew for Analyst tasks (feature decomposition + task specs).
+    """Create a crew for Analyst tasks (epic decomposition + task specs).
 
     Args:
+        backlog_path: Path to the PM's epic-level backlog
         verbose: Whether to show detailed output
 
     Returns:
@@ -19,23 +21,23 @@ def create_analyst_crew(
     from src.agents import get_analyst_agent
     analyst_agent = get_analyst_agent()
     from src.tasks import (
-        create_analyze_prd_task,
-        create_decompose_features_task,
+        create_analyze_backlog_task,
+        create_decompose_epics_task,
         create_task_specs_task,
         create_dependency_map_task,
     )
 
     # Create Analyst tasks
-    analyze_prd = create_analyze_prd_task("docs/requirements/prd.md")
-    decompose_features = create_decompose_features_task("{{features_output}}")
+    analyze_backlog = create_analyze_backlog_task(backlog_path)
+    decompose_epics = create_decompose_epics_task("{{analysis_output}}")
     create_task_specs = create_task_specs_task("{{tasks_output}}")
     map_dependencies = create_dependency_map_task(["{{task_urls}}"])
 
     return Crew(
         agents=[analyst_agent],
         tasks=[
-            analyze_prd,
-            decompose_features,
+            analyze_backlog,
+            decompose_epics,
             create_task_specs,
             map_dependencies,
         ],
@@ -44,7 +46,9 @@ def create_analyst_crew(
     )
 
 
-def run_analyst_crew() -> CrewResult:
+def run_analyst_crew(
+    backlog_path: str = "docs/requirements/backlog.md",
+) -> CrewResult:
     """Run the Analyst crew and return results."""
     import logging
     from src.tools.file_permissions import set_current_role
@@ -53,7 +57,7 @@ def run_analyst_crew() -> CrewResult:
     set_current_role("analyst")
 
     try:
-        crew = create_analyst_crew()
+        crew = create_analyst_crew(backlog_path)
         result = crew.kickoff()
         return {
             "status": "completed",

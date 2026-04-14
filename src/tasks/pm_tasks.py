@@ -61,20 +61,35 @@ def create_prd_task(requirements_hint: str) -> Task:
 
 
 def create_backlog_task(prd_hint: str) -> Task:
-    """Create task for generating product backlog."""
+    """Create task for generating EPIC-level product backlog from PRD.
+
+    The PM creates EPIC-level items (features/user stories).
+    The Analyst will later decompose these epics into detailed tasks.
+    """
     return Task(
         description="""
-        Generate the product backlog from the PRD.
+        Generate the EPIC-LEVEL product backlog from the PRD.
 
         You will receive the PRD from the previous step as context.
         Use that context to create the backlog.
 
         Your job is to:
-        1. Decompose the PRD into features and tasks (epic-level)
-        2. Write each task with description and acceptance criteria
+        1. Decompose the PRD into EPICS (major features / user stories)
+           — Each epic should represent a cohesive feature area
+           — Each epic should be describable in 1-2 sentences
+           — Do NOT break epics into individual implementation tasks
+        2. Write each epic with:
+           — Epic title and description
+           — High-level acceptance criteria (2-4 bullet points)
+           — Priority (P0-P3, MoSCoW)
+           — Dependencies on other epics (if any)
         3. Save the backlog to docs/requirements/backlog.md using save_artifact
-        4. Create a GitHub Issue for each feature/task
-        5. Apply appropriate labels (feature, priority)
+        4. Create ONE GitHub Issue per epic with appropriate labels (feature, priority)
+
+        ⚠️ IMPORTANT: Stay at EPIC level. Do NOT create detailed task breakdowns.
+        The Business Analyst will decompose each epic into implementable tasks later.
+        Example: "Chat System" is an epic. "Implement WebSocket connection", "Build message UI"
+        are tasks — those belong to the Analyst, NOT here.
 
         ⛔ CRITICAL RULES:
         - Write to docs/requirements/backlog.md ONLY.
@@ -82,7 +97,7 @@ def create_backlog_task(prd_hint: str) -> Task:
         - NEVER write to or modify docs/requirements/prd.md.
         - If you need to reference the PRD, read it but do NOT overwrite it.
         """,
-        expected_output="Path to the created backlog (docs/requirements/backlog.md) and list of GitHub Issue URLs",
+        expected_output="Path to the created backlog (docs/requirements/backlog.md) with epic-level items and list of GitHub Issue URLs",
         agent=get_pm_agent(),
     )
 

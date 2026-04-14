@@ -7,8 +7,8 @@ from .pm_tasks import (
     create_prioritize_backlog_task,
 )
 from .analyst_tasks import (
-    create_analyze_prd_task,
-    create_decompose_features_task,
+    create_analyze_backlog_task,
+    create_decompose_epics_task,
     create_task_specs_task,
     create_dependency_map_task,
     create_sprint_recommendations_task,
@@ -68,8 +68,8 @@ __all__ = [
     "create_backlog_task",
     "create_prioritize_backlog_task",
     # Analyst Tasks
-    "create_analyze_prd_task",
-    "create_decompose_features_task",
+    "create_analyze_backlog_task",
+    "create_decompose_epics_task",
     "create_task_specs_task",
     "create_dependency_map_task",
     "create_sprint_recommendations_task",
