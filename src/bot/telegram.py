@@ -101,6 +101,7 @@ class TelegramBot:
             "/status — статус проекта\n"
             "/issues — список задач\n"
             "/run &lt;issue&gt; — запустить задачу\n"
+            "/resume &lt;issue&gt; &lt;phase&gt; — продолжить с фазы\n"
             "/checkpoint — статусы checkpoint'ов\n"
             "/approve — одобрить checkpoint\n"
             "/reject &lt;причина&gt; — отклонить checkpoint\n"
@@ -345,6 +346,149 @@ class TelegramBot:
         # Start thread (thread-safe)
         with self._pipeline_lock:
             thread = threading.Thread(target=run_pipeline_thread, daemon=True)
+            self.active_pipelines[issue_key] = thread
+            thread.start()
+
+    async def resume_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Resume pipeline from a specific phase."""
+        user = update.effective_user
+        user_id = user.id if user else 0
+
+        if not self.is_authorized(user_id):
+            await update.message.reply_text("⛔ Access denied")
+            return
+
+        if not context.args or len(context.args) < 2:
+            phases = "\n".join(
+                f"  • <code>{p}</code> — {desc}"
+                for p, desc in Pipeline.PHASE_NAMES.items()
+            )
+            await update.message.reply_text(
+                "❌ Формат: <code>/resume &lt;issue&gt; &lt;phase&gt;</code>\n\n"
+                "Доступные фазы:\n" + phases,
+                parse_mode="HTML",
+            )
+            return
+
+        try:
+            issue_number = int(context.args[0])
+        except ValueError:
+            await update.message.reply_text("❌ Номер задачи должен быть числом")
+            return
+
+        from_phase = context.args[1].lower()
+        if from_phase not in Pipeline.PHASE_NAMES:
+            await update.message.reply_text(
+                f"❌ Неизвестная фаза '{from_phase}'.\n"
+                f"Доступные: {', '.join(Pipeline.PHASE_NAMES.keys())}"
+            )
+            return
+
+        # Check if already running
+        issue_key = str(issue_number)
+        with self._pipeline_lock:
+            if issue_key in self.active_pipelines and self.active_pipelines[issue_key].is_alive():
+                await update.message.reply_text(f"⏳ Задача #{issue_number} уже выполняется")
+                return
+
+        phase_label = Pipeline.PHASE_NAMES[from_phase]
+        await update.message.reply_text(
+            f"🔄 <b>Продолжаю задачу #{issue_number}</b>\n\n"
+            f"Старт с фазы: {phase_label}\n"
+            f"Предыдущие фазы пропускаются",
+            parse_mode="HTML",
+        )
+        state_manager.set_task_status(issue_key, "in_progress")
+
+        chat_id = update.effective_chat.id if update.effective_chat else user_id
+
+        def run_resume_thread():
+            """Run pipeline from specific phase in background."""
+            import asyncio
+
+            founder_vision = "Implement the feature described in docs/requirements/prd.md"
+
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    # Callback for progress
+                    def on_progress(phase: str, message: str):
+                        logger.info(f"Pipeline progress: {phase} - {message}")
+                        async def send_progress():
+                            try:
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=f"📊 <b>{phase.title()}</b>: {message}",
+                                    parse_mode="HTML",
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send progress: {e}")
+                        loop.run_until_complete(send_progress())
+
+                    # Callback for checkpoints (same as run_command)
+                    def on_checkpoint(checkpoint: Checkpoint, artifacts: list):
+                        logger.info(f"Checkpoint reached: {checkpoint}")
+                        state_manager.set_checkpoint(
+                            checkpoint.value, "pending_review", artifacts
+                        )
+                        async def send_checkpoint():
+                            checkpoint_names = {
+                                "checkpoint_1": "📋 Требования (PM)",
+                                "checkpoint_2": "📊 Анализ (Analyst)",
+                                "checkpoint_3": "🏗️ Архитектура (Architect)",
+                                "checkpoint_4": "👀 Ревью кода (Reviewer)",
+                                "checkpoint_5": "✅ Финальная проверка (QA)",
+                            }
+                            cp_name = checkpoint_names.get(checkpoint.value, checkpoint.value)
+                            repo_url = f"https://github.com/{settings.github_repo}"
+                            try:
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=(
+                                        f"🛑 <b>Checkpoint: {cp_name}</b>\n\n"
+                                        f"Фаза завершена. Проверь результат:\n"
+                                        f"🔗 <a href=\"{repo_url}\">{settings.github_repo}</a>\n\n"
+                                        f"✅ <code>/approve</code> — одобрить\n"
+                                        f"❌ <code>/reject &lt;причина&gt;</code> — отклонить"
+                                    ),
+                                    parse_mode="HTML",
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send checkpoint: {e}")
+                        loop.run_until_complete(send_checkpoint())
+
+                    result = pipeline.run_full_pipeline(
+                        issue_number=issue_number,
+                        founder_vision=founder_vision,
+                        on_checkpoint=on_checkpoint,
+                        on_progress=on_progress,
+                        from_phase=from_phase,
+                    )
+
+                    async def send_result():
+                        if result.get("status") == "complete":
+                            msg = f"✅ <b>Задача #{issue_number} завершена!</b>\nВсе фазы выполнены успешно."
+                        elif result.get("status") == "error":
+                            msg = f"❌ <b>Ошибка</b>\n\n{result.get('error', 'Unknown')}"
+                        else:
+                            msg = f"⚠️ Статус: {result.get('status', 'unknown')}"
+                        try:
+                            await self.app.bot.send_message(
+                                chat_id=chat_id, text=msg, parse_mode="HTML"
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send result: {e}")
+                        state_manager.set_task_status(issue_key, result.get("status", "error"))
+                    loop.run_until_complete(send_result())
+                finally:
+                    if not loop.is_closed():
+                        loop.close()
+            except Exception as e:
+                logger.error(f"Resume thread failed: {e}", exc_info=True)
+
+        with self._pipeline_lock:
+            thread = threading.Thread(target=run_resume_thread, daemon=True)
             self.active_pipelines[issue_key] = thread
             thread.start()
 
@@ -707,6 +851,7 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("status", self.status_command))
         self.app.add_handler(CommandHandler("issues", self.issues_command))
         self.app.add_handler(CommandHandler("run", self.run_command))
+        self.app.add_handler(CommandHandler("resume", self.resume_command))
         self.app.add_handler(CommandHandler("checkpoint", self.checkpoint_command))
         self.app.add_handler(CommandHandler("approve", self.approve_command))
         self.app.add_handler(CommandHandler("reject", self.reject_command))

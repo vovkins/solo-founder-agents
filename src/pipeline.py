@@ -325,16 +325,74 @@ class Pipeline:
     # Full pipeline
     # =========================================================================
 
+    # =========================================================================
+    # Phase prerequisites: files that must exist in GitHub to resume from a phase
+    # =========================================================================
+    PHASE_PREREQUISITES = {
+        "analysis": ["docs/requirements/prd.md"],
+        "design": ["docs/requirements/prd.md", "docs/requirements/task-specs.md"],
+        "ui_design": ["docs/requirements/prd.md", "docs/requirements/task-specs.md", "docs/design/system-design.md"],
+        "implementation": ["docs/requirements/prd.md", "docs/requirements/task-specs.md", "docs/design/system-design.md"],
+        "review": [],   # needs pr_url, checked at runtime
+        "qa": [],       # needs pr_url, checked at runtime
+        "documentation": ["docs/requirements/prd.md", "docs/design/system-design.md"],
+    }
+
+    PHASE_NAMES = {
+        "requirements": "📋 Требования (PM)",
+        "analysis": "📊 Анализ (Analyst)",
+        "design": "🏗️ Архитектура (Architect)",
+        "ui_design": "🎨 UI Design (Designer)",
+        "implementation": "💻 Разработка (Developer)",
+        "review": "👀 Ревью (Reviewer)",
+        "qa": "🧪 Тестирование (QA)",
+        "documentation": "📝 Документация (Tech Writer)",
+    }
+
+    # Execution order for skip logic
+    PHASE_ORDER = [
+        "requirements", "analysis", "design", "ui_design",
+        "implementation", "review", "qa", "documentation",
+    ]
+
+    def validate_prerequisites(self, phase: str) -> tuple[bool, list[str]]:
+        """Check that prerequisite files exist in GitHub for a given phase.
+
+        Returns (ok, missing_files).
+        """
+        from src.tools.github_client import get_github_client
+
+        prerequisites = self.PHASE_PREREQUISITES.get(phase, [])
+        if not prerequisites:
+            return True, []
+
+        client = get_github_client()
+        missing = []
+        for path in prerequisites:
+            if not client.file_exists(path):
+                missing.append(path)
+        return len(missing) == 0, missing
+
     def run_full_pipeline(
         self,
         issue_number: int,
         founder_vision: str,
         on_checkpoint: Optional[Callable] = None,
         on_progress: Optional[Callable] = None,
+        from_phase: Optional[str] = None,
     ) -> dict:
         """Run the full pipeline — each phase with its own crew and role.
 
         Phases: PM → Analyst → Architect → Designer → Developer → Reviewer → QA → Tech Writer
+
+        Args:
+            issue_number: GitHub issue number
+            founder_vision: Product vision from founder
+            on_checkpoint: Callback for checkpoint notifications
+            on_progress: Callback for progress updates
+            from_phase: Skip phases before this one (for resume).
+                        Valid values: requirements, analysis, design, ui_design,
+                        implementation, review, qa, documentation
         """
         results = {"issue_number": issue_number, "phases": {}}
 
@@ -343,87 +401,148 @@ class Pipeline:
             state_manager.state["checkpoints"] = {}
             state_manager.save_state()
 
+        # Validate prerequisites if resuming from a specific phase
+        if from_phase:
+            if from_phase not in self.PHASE_NAMES:
+                return {
+                    "status": "error",
+                    "error": f"Unknown phase '{from_phase}'. Valid: {list(self.PHASE_NAMES.keys())}",
+                }
+            ok, missing = self.validate_prerequisites(from_phase)
+            if not ok:
+                return {
+                    "status": "error",
+                    "error": f"Missing prerequisite files for phase '{from_phase}': {', '.join(missing)}",
+                }
+
+        # Determine which phases to skip
+        skipping = from_phase is not None
+
         try:
             # Phase 1: Requirements (PM)
-            if on_progress:
-                on_progress("requirements", "Собираю требования (PM)...")
-            req_result = self.run_requirements_phase(founder_vision)
-            results["phases"]["requirements"] = req_result
-
-            if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/requirements/prd.md"])
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_1):
-                    results["status"] = "rejected"
-                    results["error"] = "Checkpoint 1 (PRD) rejected or timed out"
-                    return results
-
-            # Phase 2: Analysis (Analyst)
-            if on_progress:
-                on_progress("analysis", "Анализирую PRD (Analyst)...")
-            analysis_result = self.run_analysis_phase()
-            results["phases"]["analysis"] = analysis_result
-
-            if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/requirements/task-specs.md"])
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_2):
-                    results["status"] = "rejected"
-                    return results
-
-            # Phase 3: Design (Architect)
-            if on_progress:
-                on_progress("design", "Проектирую архитектуру (Architect)...")
-            design_result = self.run_design_phase()
-            results["phases"]["design"] = design_result
-
-            if on_checkpoint:
-                on_checkpoint(Checkpoint.CHECKPOINT_3, ["docs/design/system-design.md"])
-                if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_3):
-                    results["status"] = "rejected"
-                    return results
-
-            # Phase 4: UI Design (Designer)
-            if on_progress:
-                on_progress("ui_design", "Создаю UI спецификации (Designer)...")
-            ui_result = self.run_ui_design_phase()
-            results["phases"]["ui_design"] = ui_result
-
-            # Phase 5: Implementation (Developer)
-            if on_progress:
-                on_progress("implementation", "Разрабатываю код (Developer)...")
-            impl_result = self.run_implementation_phase(issue_number)
-            results["phases"]["implementation"] = impl_result
-
-            pr_url = impl_result.get("pr_url")
-            if pr_url:
-                # Phase 6: Review (Reviewer)
+            if not skipping:
                 if on_progress:
-                    on_progress("review", "Ревью кода (Reviewer)...")
-                review_result = self.run_review_phase(pr_url)
-                results["phases"]["review"] = review_result
+                    on_progress("requirements", "Собираю требования (PM)...")
+                req_result = self.run_requirements_phase(founder_vision)
+                results["phases"]["requirements"] = req_result
 
                 if on_checkpoint:
-                    on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
-                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4):
+                    on_checkpoint(Checkpoint.CHECKPOINT_1, ["docs/requirements/prd.md"])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_1):
+                        results["status"] = "rejected"
+                        results["error"] = "Checkpoint 1 (PRD) rejected or timed out"
+                        return results
+            else:
+                logger.info(f"Skipping phase 'requirements' (resume from '{from_phase}')")
+            if from_phase == "requirements":
+                skipping = False
+
+            # Phase 2: Analysis (Analyst)
+            if not skipping:
+                if on_progress:
+                    on_progress("analysis", "Анализирую PRD (Analyst)...")
+                analysis_result = self.run_analysis_phase()
+                results["phases"]["analysis"] = analysis_result
+
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_2, ["docs/requirements/task-specs.md"])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_2):
                         results["status"] = "rejected"
                         return results
+            else:
+                logger.info(f"Skipping phase 'analysis' (resume from '{from_phase}')")
+            if from_phase == "analysis":
+                skipping = False
+
+            # Phase 3: Design (Architect)
+            if not skipping:
+                if on_progress:
+                    on_progress("design", "Проектирую архитектуру (Architect)...")
+                design_result = self.run_design_phase()
+                results["phases"]["design"] = design_result
+
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_3, ["docs/design/system-design.md"])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_3):
+                        results["status"] = "rejected"
+                        return results
+            else:
+                logger.info(f"Skipping phase 'design' (resume from '{from_phase}')")
+            if from_phase == "design":
+                skipping = False
+
+            # Phase 4: UI Design (Designer)
+            if not skipping:
+                if on_progress:
+                    on_progress("ui_design", "Создаю UI спецификации (Designer)...")
+                ui_result = self.run_ui_design_phase()
+                results["phases"]["ui_design"] = ui_result
+            else:
+                logger.info(f"Skipping phase 'ui_design' (resume from '{from_phase}')")
+            if from_phase == "ui_design":
+                skipping = False
+
+            # Phase 5: Implementation (Developer)
+            if not skipping:
+                if on_progress:
+                    on_progress("implementation", "Разрабатываю код (Developer)...")
+                impl_result = self.run_implementation_phase(issue_number)
+                results["phases"]["implementation"] = impl_result
+            else:
+                logger.info(f"Skipping phase 'implementation' (resume from '{from_phase}')")
+            if from_phase == "implementation":
+                skipping = False
+
+            # Get pr_url from implementation result (or None if skipped)
+            impl_result = results["phases"].get("implementation", {})
+            pr_url = impl_result.get("pr_url") if impl_result else None
+
+            if pr_url:
+                # Phase 6: Review (Reviewer)
+                if not skipping:
+                    if on_progress:
+                        on_progress("review", "Ревью кода (Reviewer)...")
+                    review_result = self.run_review_phase(pr_url)
+                    results["phases"]["review"] = review_result
+
+                    if on_checkpoint:
+                        on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
+                        if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4):
+                            results["status"] = "rejected"
+                            return results
+                else:
+                    logger.info(f"Skipping phase 'review' (resume from '{from_phase}')")
+                if from_phase == "review":
+                    skipping = False
 
                 # Phase 7: QA
-                if on_progress:
-                    on_progress("qa", "Тестирую (QA)...")
-                qa_result = self.run_qa_phase(pr_url)
-                results["phases"]["qa"] = qa_result
+                if not skipping:
+                    if on_progress:
+                        on_progress("qa", "Тестирую (QA)...")
+                    qa_result = self.run_qa_phase(pr_url)
+                    results["phases"]["qa"] = qa_result
+                else:
+                    logger.info(f"Skipping phase 'qa' (resume from '{from_phase}')")
+                if from_phase == "qa":
+                    skipping = False
 
             # Phase 8: Documentation (Tech Writer)
-            if on_progress:
-                on_progress("documentation", "Обновляю документацию (Tech Writer)...")
-            doc_result = self.run_documentation_phase()
-            results["phases"]["documentation"] = doc_result
+            if not skipping:
+                if on_progress:
+                    on_progress("documentation", "Обновляю документацию (Tech Writer)...")
+                doc_result = self.run_documentation_phase()
+                results["phases"]["documentation"] = doc_result
+            else:
+                logger.info(f"Skipping phase 'documentation' (resume from '{from_phase}')")
+            if from_phase == "documentation":
+                skipping = False
 
             # Final checkpoint
-            if on_checkpoint:
-                with self._lock:
-                    pr_urls = self.state.get("pr_urls", [])
-                on_checkpoint(Checkpoint.CHECKPOINT_5, pr_urls)
+            if not skipping:
+                if on_checkpoint:
+                    with self._lock:
+                        pr_urls = self.state.get("pr_urls", [])
+                    on_checkpoint(Checkpoint.CHECKPOINT_5, pr_urls)
 
             results["status"] = "complete"
 

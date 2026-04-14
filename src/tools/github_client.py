@@ -271,6 +271,15 @@ class GitHubClient:
         logger.debug(f"Fetching file '{path}' from branch '{branch}'")
         return self.repo.get_contents(path, ref=branch)
 
+    @retry_on_rate_limit(max_retries=2)
+    def file_exists(self, path: str, branch: str = "main") -> bool:
+        """Check if a file exists in the repository."""
+        try:
+            self.repo.get_contents(path, ref=branch)
+            return True
+        except Exception:
+            return False
+
     @handle_github_errors
     @retry_on_rate_limit(max_retries=3)
     def create_file(
