@@ -36,6 +36,7 @@ class Checkpoint(str, Enum):
     CHECKPOINT_1 = "checkpoint_1"  # After PRD
     CHECKPOINT_2 = "checkpoint_2"  # After Analysis
     CHECKPOINT_3 = "checkpoint_3"  # After System Design
+    CHECKPOINT_3B = "checkpoint_3b"  # After UI Design
     CHECKPOINT_4 = "checkpoint_4"  # After Implementation + Review
     CHECKPOINT_5 = "checkpoint_5"  # After QA — Final Release
 
@@ -473,6 +474,12 @@ class Pipeline:
                     on_progress("ui_design", "Создаю UI спецификации (Designer)...")
                 ui_result = self.run_ui_design_phase()
                 results["phases"]["ui_design"] = ui_result
+
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_3B, ["docs/design/design-system.md", "docs/design/ui/"])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_3B):
+                        results["status"] = "rejected"
+                        return results
             else:
                 logger.info(f"Skipping phase 'ui_design' (resume from '{from_phase}')")
             if from_phase == "ui_design":

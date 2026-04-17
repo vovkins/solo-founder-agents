@@ -280,6 +280,7 @@ class TelegramBot:
                                 "checkpoint_1": "📋 Требования (PM)",
                                 "checkpoint_2": "📊 Анализ (Analyst)",
                                 "checkpoint_3": "🏗️ Архитектура (Architect)",
+                                "checkpoint_3b": "🎨 UI Дизайн (Designer)",
                                 "checkpoint_4": "👀 Ревью кода (Reviewer)",
                                 "checkpoint_5": "✅ Финальная проверка (QA)",
                             }
@@ -437,6 +438,7 @@ class TelegramBot:
                                 "checkpoint_1": "📋 Требования (PM)",
                                 "checkpoint_2": "📊 Анализ (Analyst)",
                                 "checkpoint_3": "🏗️ Архитектура (Architect)",
+                                "checkpoint_3b": "🎨 UI Дизайн (Designer)",
                                 "checkpoint_4": "👀 Ревью кода (Reviewer)",
                                 "checkpoint_5": "✅ Финальная проверка (QA)",
                             }
