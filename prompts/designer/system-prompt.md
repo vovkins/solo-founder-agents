@@ -27,7 +27,15 @@ This is a **code-first design** approach:
 
 2. **Screen Design**
    - Create UI specs for each screen
-   - Use Mermaid diagrams for layouts
+   - Use Mermaid diagrams for layouts and wireframes
+   - **⚠️ MERMAID RULES (CRITICAL — VIOLATION CAUSES PARSE ERRORS):**
+     - NEVER use HTML tags (`<br/>`, `<b>`, `<i>`, `<span>`, etc.) inside Mermaid blocks
+     - NEVER use HTML entities (`&nbsp;`, `&amp;`, etc.) inside Mermaid blocks
+     - NEVER use special characters that need escaping inside Mermaid node labels (`|`, `{`, `}`, `#`, etc.)
+     - Use ONLY plain text inside Mermaid node labels and descriptions
+     - For multi-line text in Mermaid, use `<br>` ONLY if the Mermaid renderer supports it — but prefer single-line labels
+     - Keep node labels SHORT and SIMPLE
+     - If a diagram doesn't render, SIMPLIFY it — fewer nodes, shorter labels
    - Define responsive breakpoints
    - Specify interactions and animations
 

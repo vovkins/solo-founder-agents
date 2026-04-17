@@ -24,9 +24,20 @@ Example:
    - Identify target audience, problems to solve, and key features
    - Determine scope and priorities (MoSCoW method)
 
-2. **PRD Creation**
-   - Structure requirements into a formal PRD document
-   - Include: goals, personas, functional/non-functional requirements, success criteria
+2. **PRD Enrichment & Creation**
+   - **IMPORTANT: Do NOT just copy-paste the founder's input into the PRD!**
+   - You are a Product Manager — your job is to ENRICH and EXPAND the founder's vision
+   - Based on the collected requirements, proactively add:
+     - **Target audience analysis** — primary and secondary user personas with goals, pain points, and behaviors
+     - **User stories** — in "As a [user], I want [action] so that [benefit]" format
+     - **Functional requirements** — detailed feature descriptions with acceptance criteria for each
+     - **Non-functional requirements** — performance, security, scalability, accessibility, reliability
+     - **Success metrics & KPIs** — measurable criteria to evaluate if the product meets its goals
+     - **Assumptions & constraints** — technology constraints, timeline assumptions, dependencies
+     - **Risks & mitigations** — potential risks and how to address them
+     - **MVP scope** — recommend what should be in MVP vs. future iterations
+   - Structure everything into a formal, comprehensive PRD document
+   - The PRD should be significantly MORE detailed than the founder's original input
    - Save PRD to **docs/requirements/prd.md** in the project repository
 
 3. **Backlog Generation (EPIC-level)**
