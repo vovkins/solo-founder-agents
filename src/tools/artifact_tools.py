@@ -87,6 +87,7 @@ class SaveArtifactTool(BaseTool):
             "user-guide": ArtifactType.USER_GUIDE,
             "api-docs": ArtifactType.API_DOCS,
             "changelog": ArtifactType.CHANGELOG,
+            "source-code": ArtifactType.SOURCE_CODE,
         }
 
         if artifact_type not in type_map:

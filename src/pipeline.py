@@ -182,48 +182,44 @@ class Pipeline:
         print("=" * 50)
 
         self._update_stage(PipelineStage.IMPLEMENTATION)
-
-        from src.tools import get_issue_details
-        issue = get_issue_details(issue_number)
+        state_manager.update_agent_state("developer", "working", f"implementing_issue_{issue_number}")
 
         from src.crews import run_developer_crew
         result = run_developer_crew(issue_number)
 
-        if result.get("pr_url"):
-            self._append_state("pr_urls", result["pr_url"])
-
+        state_manager.update_agent_state("developer", "idle")
         self._update_stage(PipelineStage.REVIEW)
 
         return result
 
-    def run_review_phase(self, pr_url: str) -> dict:
-        """Phase 6: Reviewer agent reviews PR."""
+    def run_review_phase(self) -> dict:
+        """Phase 6: Reviewer agent reviews code artifacts."""
         print("\n" + "=" * 50)
-        print(f"👀 PHASE: Review (Reviewer)")
+        print("👀 PHASE: Review (Reviewer)")
         print("=" * 50)
 
         self._update_stage(PipelineStage.REVIEW)
-        state_manager.update_agent_state("reviewer", "working", f"reviewing_{pr_url}")
+        state_manager.update_agent_state("reviewer", "working", "reviewing_code")
 
         from src.crews import run_reviewer_crew
-        result = run_reviewer_crew(pr_url)
+        result = run_reviewer_crew()
 
         state_manager.update_agent_state("reviewer", "idle")
         self._update_stage(PipelineStage.QA)
 
         return result
 
-    def run_qa_phase(self, pr_url: str) -> dict:
+    def run_qa_phase(self) -> dict:
         """Phase 7: QA agent tests the implementation."""
         print("\n" + "=" * 50)
         print(f"✅ PHASE: QA")
         print("=" * 50)
 
         self._update_stage(PipelineStage.QA)
-        state_manager.update_agent_state("qa", "working", f"testing_{pr_url}")
+        state_manager.update_agent_state("qa", "working", "testing_code")
 
         from src.crews import run_qa_crew
-        result = run_qa_crew(pr_url)
+        result = run_qa_crew()
 
         state_manager.update_agent_state("qa", "idle")
         self._update_state("qa_status", "passed")
@@ -493,38 +489,33 @@ class Pipeline:
             if from_phase == "implementation":
                 skipping = False
 
-            # Get pr_url from implementation result (or None if skipped)
-            impl_result = results["phases"].get("implementation", {})
-            pr_url = impl_result.get("pr_url") if impl_result else None
+            # Phase 6: Review (Reviewer)
+            if not skipping:
+                if on_progress:
+                    on_progress("review", "Ревью кода (Reviewer)...")
+                review_result = self.run_review_phase()
+                results["phases"]["review"] = review_result
 
-            if pr_url:
-                # Phase 6: Review (Reviewer)
-                if not skipping:
-                    if on_progress:
-                        on_progress("review", "Ревью кода (Reviewer)...")
-                    review_result = self.run_review_phase(pr_url)
-                    results["phases"]["review"] = review_result
+                if on_checkpoint:
+                    on_checkpoint(Checkpoint.CHECKPOINT_4, ["Code review completed"])
+                    if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4):
+                        results["status"] = "rejected"
+                        return results
+            else:
+                logger.info(f"Skipping phase 'review' (resume from '{from_phase}')")
+            if from_phase == "review":
+                skipping = False
 
-                    if on_checkpoint:
-                        on_checkpoint(Checkpoint.CHECKPOINT_4, [pr_url])
-                        if not self.wait_for_checkpoint_approval(Checkpoint.CHECKPOINT_4):
-                            results["status"] = "rejected"
-                            return results
-                else:
-                    logger.info(f"Skipping phase 'review' (resume from '{from_phase}')")
-                if from_phase == "review":
-                    skipping = False
-
-                # Phase 7: QA
-                if not skipping:
-                    if on_progress:
-                        on_progress("qa", "Тестирую (QA)...")
-                    qa_result = self.run_qa_phase(pr_url)
-                    results["phases"]["qa"] = qa_result
-                else:
-                    logger.info(f"Skipping phase 'qa' (resume from '{from_phase}')")
-                if from_phase == "qa":
-                    skipping = False
+            # Phase 7: QA
+            if not skipping:
+                if on_progress:
+                    on_progress("qa", "Тестирую (QA)...")
+                qa_result = self.run_qa_phase()
+                results["phases"]["qa"] = qa_result
+            else:
+                logger.info(f"Skipping phase 'qa' (resume from '{from_phase}')")
+            if from_phase == "qa":
+                skipping = False
 
             # Phase 8: Documentation (Tech Writer)
             if not skipping:

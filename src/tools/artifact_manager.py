@@ -41,6 +41,7 @@ class ArtifactType(Enum):
     CHANGELOG = "changelog"
     PR = "pull-request"
     GITHUB_ISSUE = "github-issue"
+    SOURCE_CODE = "source-code"
 
 
 @dataclass
@@ -368,6 +369,8 @@ class ArtifactManager:
             path = "docs/api-docs.md"
         elif artifact_type == ArtifactType.CHANGELOG:
             path = "docs/changelog.md"
+        elif artifact_type == ArtifactType.SOURCE_CODE:
+            path = f"src/{name or timestamp}"
         else:
             path = f"docs/{name or timestamp}.md"
 

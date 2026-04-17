@@ -6,7 +6,7 @@ from src.agents import get_developer_agent
 
 
 def create_analyze_task_task(issue_number: int) -> Task:
-    """Create task for analyzing a GitHub Issue.
+    """Create task for analyzing task specifications from GitHub.
 
     Args:
         issue_number: GitHub Issue number
@@ -16,202 +16,111 @@ def create_analyze_task_task(issue_number: int) -> Task:
     """
     return Task(
         description=f"""
-        Analyze GitHub Issue #{issue_number} for implementation.
-        
+        Analyze task specifications for implementation.
+
         Your job is to:
-        1. Read the issue details from GitHub
-        2. Understand acceptance criteria
-        3. Review related System Design documents
-        4. Check for ADRs related to this task
-        5. Identify dependencies
-        6. Plan implementation approach
-        
-        Output:
-        - Task summary
-        - Acceptance criteria list
-        - Implementation plan
-        - Files to create/modify
-        - Dependencies
+        1. Read task specifications from docs/requirements/task-specs.md in GitHub
+        2. Read the related GitHub Issue #{issue_number} for context
+        3. Review System Design (docs/design/system-design.md) and ADRs
+        4. Read the Design System (docs/design/design-system.md) for UI guidance
+        5. Identify dependencies and implementation order
+        6. Plan which files need to be created
+
+        Focus on the FIRST task from task-specs that is not yet implemented.
+        Prioritize tasks marked as P0 or P1.
+
+        Output a detailed implementation plan including:
+        - Which task you will implement
+        - List of files to create with their paths
+        - Implementation approach
+        - Dependencies on other files/components
         """,
-        expected_output="Implementation plan for the task",
+        expected_output="Detailed implementation plan: which task, files to create, approach",
+        output_key="implementation_plan",
         agent=get_developer_agent(),
     )
 
 
-def create_feature_branch_task(
-    issue_number: int,
-    feature_name: str,
-) -> Task:
-    """Create task for creating a feature branch.
-
-    Args:
-        issue_number: GitHub Issue number
-        feature_name: Name for the branch
-
-    Returns:
-        Task for branch creation
-    """
-    branch_name = f"feature/{issue_number}-{feature_name}"
-
-    return Task(
-        description=f"""
-        Create feature branch for implementation.
-        
-        Branch name: {branch_name}
-        
-        Your job is to:
-        1. Ensure you're on main branch
-        2. Pull latest changes
-        3. Create new branch: {branch_name}
-        
-        Use git commands to create the branch.
-        """,
-        expected_output=f"Branch {branch_name} created and checked out",
-        agent=get_developer_agent(),
-    )
-
-
-def create_implement_feature_task(
-    implementation_plan: str,
-    branch_name: str,
-) -> Task:
+def create_implement_feature_task() -> Task:
     """Create task for implementing a feature.
 
-    Args:
-        implementation_plan: Plan from analysis
-        branch_name: Feature branch name
+    The implementation_plan is passed from the previous task via output_key.
 
     Returns:
         Task for implementation
     """
     return Task(
-        description=f"""
-        Implement the feature according to plan.
-        
-        Branch: {branch_name}
-        
-        Implementation Plan:
-        {implementation_plan}
-        
+        description="""
+        Implement the feature according to the plan from the analysis step.
+
+        Follow the implementation plan from the previous task.
+
         Your job is to:
-        1. Create necessary files
-        2. Implement functionality
-        3. Follow coding standards
-        4. Handle errors appropriately
-        5. Add necessary logging
-        
-        Code Guidelines:
-        - Use TypeScript strict mode
-        - Functional React components
-        - Proper error handling
-        - JSDoc comments for functions
-        
+        1. Create source code files using the save_artifact tool
+        2. For TypeScript/JavaScript files, use artifact_type="source-code" with name parameter for the file path
+        3. Follow coding standards (TypeScript strict, functional React, proper error handling)
+        4. Include JSDoc comments for functions
+        5. Handle errors appropriately
+        6. Add logging where needed
+
+        IMPORTANT: Save ALL code files to GitHub using save_artifact tool.
+        Do NOT use git commands. The save_artifact tool handles file persistence.
+
+        Example:
+        save_artifact("source-code", "import React from 'react'...", name="components/LoginScreen.tsx")
+        save_artifact("source-code", "export interface User {...}", name="types/User.ts")
+
         Ensure code is clean, readable, and maintainable.
         """,
-        expected_output="Implementation complete with list of created/modified files",
+        expected_output="List of files created and saved to GitHub",
+        output_key="files_created",
         agent=get_developer_agent(),
     )
 
 
-def create_write_tests_task(
-    files_modified: list,
-    issue_number: int,
-) -> Task:
+def create_write_tests_task() -> Task:
     """Create task for writing unit tests.
 
-    Args:
-        files_modified: List of files that were modified
-        issue_number: GitHub Issue number
+    The files_created is passed from the previous task via output_key.
 
     Returns:
         Task for test writing
     """
-    files_str = "\n".join(f"- {f}" for f in files_modified)
-
     return Task(
-        description=f"""
+        description="""
         Write unit tests for the implemented feature.
-        
-        Files to test:
-        {files_str}
-        
+
+        Based on the files created in the previous step, write corresponding tests.
+
         Your job is to:
-        1. Create test files (filename.test.ts)
-        2. Test all functions and components
-        3. Cover edge cases
-        4. Test error handling
-        5. Ensure tests are meaningful
-        
+        1. For each source file created, create a test file (e.g., Component.tsx -> Component.test.tsx)
+        2. Use save_artifact with artifact_type="source-code" and name parameter for test files
+        3. Test all functions and components
+        4. Cover edge cases
+        5. Test error handling
+        6. Ensure tests are meaningful
+
         Testing Guidelines:
         - Use Jest and React Testing Library
         - Test behavior, not implementation
         - Use descriptive test names
         - Arrange-Act-Assert pattern
         - Mock external dependencies
-        
-        Run tests to ensure they pass.
+
+        Example:
+        save_artifact("source-code", "import { render } from '@testing-library/react'...", name="components/__tests__/LoginScreen.test.tsx")
         """,
-        expected_output="Unit tests written and passing",
-        agent=get_developer_agent(),
-    )
-
-
-def create_pull_request_task(
-    issue_number: int,
-    branch_name: str,
-    changes_summary: str,
-) -> Task:
-    """Create task for creating a Pull Request.
-
-    Args:
-        issue_number: GitHub Issue number
-        branch_name: Feature branch name
-        changes_summary: Summary of changes
-
-    Returns:
-        Task for PR creation
-    """
-    return Task(
-        description=f"""
-        Create Pull Request for the implemented feature.
-        
-        Branch: {branch_name}
-        Issue: #{issue_number}
-        
-        Changes:
-        {changes_summary}
-        
-        Your job is to:
-        1. Push branch to remote
-        2. Create PR with title: `feat: [feature description]`
-        3. Add description with:
-           - Summary of changes
-           - Link to Issue #{issue_number}
-           - Testing instructions
-           - Screenshots (if UI changes)
-        4. Request review from Developer (Reviewer)
-        
-        PR Guidelines:
-        - Keep under 1000 lines
-        - Clear description
-        - All tests passing
-        - No lint errors
-        
-        Create the PR using GitHub API.
-        """,
-        expected_output="URL of created Pull Request",
+        expected_output="List of test files created and saved to GitHub",
         agent=get_developer_agent(),
     )
 
 
 def create_fix_review_comments_task(
-    pr_url: str,
     review_comments: str,
 ) -> Task:
     """Create task for addressing review comments.
 
     Args:
-        pr_url: Pull Request URL
         review_comments: Comments from reviewer
 
     Returns:
@@ -219,26 +128,22 @@ def create_fix_review_comments_task(
     """
     return Task(
         description=f"""
-        Address review comments on Pull Request.
-        
-        PR: {pr_url}
-        
+        Address review comments.
+
         Review Comments:
         {review_comments}
-        
+
         Your job is to:
         1. Read each comment
-        2. Make necessary changes
-        3. Respond to comments
-        4. Push fixes
-        5. Re-request review
-        
+        2. Update files using save_artifact tool
+        3. Do NOT use git commands — save_artifact handles persistence
+
         Guidelines:
         - Accept valid suggestions
         - Explain reasoning if you disagree
         - Keep changes minimal
         - Update tests if needed
         """,
-        expected_output="Review comments addressed and fixes pushed",
+        expected_output="Review comments addressed, files updated in GitHub",
         agent=get_developer_agent(),
     )
