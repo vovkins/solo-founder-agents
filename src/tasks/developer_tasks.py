@@ -26,8 +26,12 @@ def create_analyze_task_task(issue_number: int) -> Task:
         5. Identify dependencies and implementation order
         6. Plan which files need to be created
 
-        Focus on the FIRST task from task-specs that is not yet implemented.
-        Prioritize tasks marked as P0 or P1.
+        To determine which task is not yet implemented:
+        - Read existing files in src/ directory using read_artifact or list_my_files tool
+        - A task is considered implemented if its main source files already exist in src/
+        - Focus on the FIRST task that is NOT yet implemented
+        - Prioritize tasks marked as P0 or P1
+        - If you cannot determine which tasks are done, start with the first P0 task
 
         Output a detailed implementation plan including:
         - Which task you will implement
