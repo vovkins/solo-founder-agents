@@ -45,12 +45,8 @@ from .reviewer_tasks import (
 )
 from .qa_tasks import (
     create_test_plan_task,
-    create_e2e_tests_task,
-    create_integration_tests_task,
-    create_acceptance_verification_task,
-    create_bug_report_task,
+    create_code_verification_task,
     create_qa_signoff_task,
-    create_regression_test_task,
 )
 from .tech_writer_tasks import (
     create_readme_task,
@@ -101,12 +97,8 @@ __all__ = [
     "create_approval_task",
     # QA Tasks
     "create_test_plan_task",
-    "create_e2e_tests_task",
-    "create_integration_tests_task",
-    "create_acceptance_verification_task",
-    "create_bug_report_task",
+    "create_code_verification_task",
     "create_qa_signoff_task",
-    "create_regression_test_task",
     # Tech Writer Tasks
     "create_readme_task",
     "create_api_docs_task",
