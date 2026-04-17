@@ -50,11 +50,7 @@ from .qa_tasks import (
 )
 from .tech_writer_tasks import (
     create_readme_task,
-    create_api_docs_task,
-    create_component_docs_task,
-    create_setup_guide_task,
     create_changelog_task,
-    create_architecture_doc_task,
 )
 
 __all__ = [
@@ -101,9 +97,5 @@ __all__ = [
     "create_qa_signoff_task",
     # Tech Writer Tasks
     "create_readme_task",
-    "create_api_docs_task",
-    "create_component_docs_task",
-    "create_setup_guide_task",
     "create_changelog_task",
-    "create_architecture_doc_task",
 ]
